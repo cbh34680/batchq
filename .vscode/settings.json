@@ -1,0 +1,8 @@
+{
+    "python.defaultInterpreterPath": "vsc.venv/bin/python",
+    "editor.minimap.enabled": false,
+    "editor.autoClosingQuotes": "never",
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    "editor.autoClosingBrackets": "never",
+}

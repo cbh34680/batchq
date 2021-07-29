@@ -1,0 +1,17 @@
+/vsc.venv
+/.env
+/var
+/runlog.txt
+/log.txt
+*.log
+/run.sh
+/clean.sh
+/stop.sh
+
+*.pyc
+*.pyd
+*.pyo
+*.so
+*.swp
+
+__pycache__

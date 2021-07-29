@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "server",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}${pathSeparator}main${pathSeparator}server.py",
+      "cwd": "${workspaceFolder}${pathSeparator}work.d${pathSeparator}sys",
+      "console": "integratedTerminal",
+      "args": [
+        "--config=${workspaceFolder}${pathSeparator}work.d${pathSeparator}sys${pathSeparator}etc${pathSeparator}config.json"
+      ],
+      "env": {
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "BQ_CLEAR_BEFORE_MAIN": "1",
+        "BQ_LOGLEVEL": "DEBUG",
+        "BQ_APP_WORK": "${env:HOME}${pathSeparator}devwork${pathSeparator}workspaces${pathSeparator}batchq${pathSeparator}work.d",
+      },
+      //"internalConsoleOptions": "openOnSessionStart",
+      //"redirectOutput": true,
+      "justMyCode": false
+    },
+    {
+      "name": "make config",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}${pathSeparator}work.d${pathSeparator}sys${pathSeparator}make-config-py.txt",
+      //"cwd": "${workspaceFolder}${pathSeparator}work.d${pathSeparator}sys",
+      "console": "integratedTerminal",
+      "args": [
+        "--overwrite=True"
+      ],
+      "env": {
+        "PYTHONDONTWRITEBYTECODE": "1",
+      },
+      //"internalConsoleOptions": "openOnSessionStart",
+      //"redirectOutput": true,
+      "justMyCode": false
+    },
+  ]
+}

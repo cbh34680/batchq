@@ -1,0 +1,342 @@
+import os
+import os.path
+import json
+import sys
+import argparse
+import distutils.util
+
+def gen_config():
+
+    ret = {
+        'meta': {
+            'version': '1.0.0',
+            'description': '',
+        },
+        'const': {
+            'batchq': {
+                'log-file': True,
+            },
+            'batchq.utils.strmutil': {
+                'log-file': False,
+            },
+            'batchq.utils.queutil': {
+                'log-file': False,
+            },
+            'batchq.utils.inoutil': {
+                'log-file': False,
+            },
+            'batchq.consumer': {
+                'create-task': 10,
+            },
+            'batchq.netlistener': {
+                'listen-port': 9999,
+            },
+        },
+        'path': {
+            'batchq': {
+                'worker-config': '{env;BQ_APP_WORK}/sys/var/etc/worker.json',
+                'log-file': '{env;BQ_APP_WORK}/sys/var/log/debug/system.log',
+                'pid-save': '{env;BQ_APP_WORK}/sys/var/run/batchq.pid',
+                'last-shutdown': '{env;BQ_APP_WORK}/sys/var/run/last-shutdown.txt',
+                'last-memory': '{env;BQ_APP_WORK}/sys/var/run/last-memory.txt',
+                'loadavg': '/proc/loadavg',
+            },
+            'batchq.utils.strmutil': {
+                'log-file': '{env;BQ_APP_WORK}/sys/var/log/debug/strmutil.log',
+            },
+            'batchq.utils.queutil': {
+                'log-file': '{env;BQ_APP_WORK}/sys/var/log/debug/queutil.log',
+            },
+            'batchq.utils.inoutil': {
+                'log-file': '{env;BQ_APP_WORK}/sys/var/log/debug/inoutil.log',
+            },
+            'batchq.utils.jobutil': {
+                'history': '{env;BQ_APP_WORK}/sys/var/data/job/history.lst',
+                'request': '{env;BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/request.txt',
+                'execute': '{env;BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/execute.txt',
+                'result': '{env;BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/result.txt',
+                'response': '{env;BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/response.txt',
+            },
+            'batchq.pipelistener': {
+                'socket': '{env;BQ_APP_WORK}/sys/var/run/batchq.sock',
+                'output': '{env;BQ_APP_WORK}/sys/var/tmp/splitter/%d%H%M%S-{app;pid}.txt',
+            },
+            'batchq.splitter': {
+                'watchdir': '{env;BQ_APP_WORK}/sys/var/tmp/splitter',
+                'valid': '{env;BQ_APP_WORK}/sys/var/data/valid/%d%H-{app;pid}-{task;filename-suffix}',
+                'invalid': '{env;BQ_APP_WORK}/sys/var/data/invalid/%y/%m%d/%H/{app;pid}-{task;filename-suffix}',
+            },
+            'batchq.loader': {
+                'watchdir': '{env;BQ_APP_WORK}/sys/var/etc',
+            },
+            'batchq.netlistener': {
+                'busy-threshold': '{env;BQ_APP_WORK}/sys/var/etc/busy-threshold.val',
+                'accept': '{env;BQ_APP_WORK}/sys/var/log/accept/%y/%m%d/%H.log',
+                'proceed': '{env;BQ_APP_WORK}/sys/var/log/proceed/%y/%m%d/%H.log',
+                'reject': '{env;BQ_APP_WORK}/sys/var/log/reject/%y/%m%d/%H.log',
+            },
+            'batchq.producer': {
+                'sent': '{env;BQ_APP_WORK}/sys/var/data/sent/%y/%m%d/%H/{task;filename}',
+                'guveup': '{env;BQ_APP_WORK}/sys/var/data/giveup/%y/%m%d/%H/{task;filename}',
+                'impossible': '{env;BQ_APP_WORK}/sys/var/data/impossible/%y/%m%d/%H/{task;filename}',
+            },
+            'batchq.consumer': {
+                'softlimit': '{env;BQ_APP_WORK}/sys/var/etc/softlimit.val',
+                'master-host': '{env;BQ_APP_WORK}/sys/var/etc/master-host.val',
+            },
+            'batchq.postman': {
+                'sent': '{env;BQ_APP_WORK}/sys/var/log/sent/%y/%m%d/%H.log',
+                'guveup': '{env;BQ_APP_WORK}/sys/var/log/guveup/%y/%m%d/%H.log',
+            },
+        },
+        'worker': {},
+    }
+
+    return ret
+
+def gen_worker():
+
+    ret = {
+        'dump-memory': {
+            # [option default='later']
+            'when': 'immediate',
+
+            # [option default='subproc']
+            'type': 'module',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'function': 'handle_dump_memory',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'list-jobs': {
+            # [option default='later']
+            'when': 'immediate',
+
+            # [option default='subproc']
+            'type': 'module',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'function': 'handle_list_jobs',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'show-job': {
+            # [option default='later']
+            'when': 'immediate',
+
+            # [option default='subproc']
+            'type': 'module',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'function': 'handle_show_job',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'be-master': {
+            # [option default='later']
+            'when': 'immediate',
+
+            # [option default='subproc']
+            'type': 'module',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'function': 'handle_be_master',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'change-master': {
+            # [option default='later']
+            'when': 'immediate',
+
+            # [option default='subproc']
+            'type': 'module',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'function': 'handle_change_master',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'report': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='subproc']
+            'type': 'module',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'function': 'handle_report',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'ping': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='subproc']
+            'type': 'module',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'function': 'handle_ping',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'pong': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='subproc']
+            'type': 'module',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'function': 'handle_pong',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'app1': {
+            # [option]
+            'execbin': '/bin/bash',
+
+            # [need if 'subproc']
+            'program': '{env;BQ_APP_WORK}/app-example/app1/run.sh',
+
+            # [option]
+            'cwd': '{env;BQ_APP_WORK}/app-example/app1',
+            'stdout': '{env;BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskno}.out',
+            'stderr': '{env;BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskno}.err',
+
+            # [auto]
+            'exec-params': {
+                # [default=[]]
+                'args': [
+                    100,
+                    200,
+                ],
+                # [default={}, -> env]
+                'kwargs': {
+                    'HELLO': 'WORLD',
+                    'PATH': '{env;PATH}'
+                },
+                # [option default=True]
+                #'send-report': True,
+            },
+        },
+    }
+
+    return ret
+
+
+def write_config(path, overwrite, gen_func):
+
+    write_ok = True
+
+    if os.path.exists(path):
+        if not overwrite:
+            print(f'{path}: already exist')
+            write_ok = False
+
+    if write_ok:
+        path_dir = os.path.dirname(path)
+        os.makedirs(path_dir, exist_ok=True)
+
+        with open(path, mode='w') as f:
+            f.write(json.dumps(gen_func(), indent=4))
+
+
+if __name__ == '__main__':
+
+    print(f'{__file__}: start', file=sys.stderr)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--overwrite', dest='overwrite', default=False, help='overwrite output files.', type=distutils.util.strtobool)
+    cmd_args = parser.parse_args()
+
+    thisdir = os.path.realpath(os.path.dirname(__file__))
+    os.chdir(thisdir)
+
+    write_config('etc/config.json', cmd_args.overwrite, gen_config)
+    write_config('var/etc/worker.json', cmd_args.overwrite, gen_worker)
+
+    print(f'{__file__}: done.', file=sys.stderr)
+
+#
