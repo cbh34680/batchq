@@ -1,8 +1,2 @@
-/logs/*
-/var/*
-/watch/*/*
-/data/*
-
-/link
 /run.sh
 /stop.sh
