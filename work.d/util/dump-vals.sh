@@ -12,11 +12,7 @@ else
   jq_key=".additional.retval.vals.\"${1}\""
 fi
 
-echo
-echo "# QUERY=[$jq_key]"
-echo
-
-cat << EOF | nc -v localhost 9999 | jq -r "$jq_key"
+cat << EOF | nc localhost 9999 | jq -r "$jq_key"
 {"worker-key":"dump-memory"}
 
 EOF
