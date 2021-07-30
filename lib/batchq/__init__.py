@@ -29,7 +29,7 @@ _EMPTY_WORKER = {
     'when': 'later',
     'type': 'subproc',
     'module': 'batchq.handlers.simple',
-    'function': 'handle_any',
+    'handler': 'handle_any',
     'increment-running': True,
     'exec-params': {
         'args': [],

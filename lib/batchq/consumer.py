@@ -163,93 +163,6 @@ async def do_send_report(arg_message, type, exec_params, result):
     memory.helper.stats_incr(__name__, 'report')
 
 
-async def exec_subproc(taskno:int, message:typing.Dict, worker_key:str, worker:typing.Dict, exec_params:typing.Dict):
-
-    returncode = -1
-    proc = -1
-    paths = None
-
-    try:
-        execbin = worker.get('execbin')
-        if execbin is not None:
-            execbin = expand_placeholder(execbin)
-
-        args = [
-            execbin,
-            expand_placeholder(worker['program']),
-        ]
-
-        args += exec_params['args']
-        args = [ str(v) for v in args if v is not None ]
-
-        static_env = {
-            'BQ_WORKER_KEY': worker_key,
-            'BQ_CLIENT': message['peername'][0],
-            'BQ_SESSION': exec_params.get('job'),
-            'BQ_TASKNO': taskno,
-        }
-
-        env = dict_deep_merge(exec_params['kwargs'], static_env)
-        env = { k: expand_placeholder(str(v)) for k, v in env.items() if v is not None }
-
-        path_params = { 'task;taskno': taskno, }
-        paths = { k: path_expand_placeholder(worker[k], path_params=path_params) if k in worker else None for k in ('cwd', 'stdout', 'stderr', ) }
-
-        conf = {
-            'stdout': asyncio.subprocess.PIPE,
-            'stderr': asyncio.subprocess.PIPE,
-            'env': env,
-            'cwd': paths.get('cwd'),
-        }
-
-        start_ts = current_timestamp()
-        proc = await asyncio.create_subprocess_exec(*args, **conf)
-        logger.debug(f'{taskno}) subprocess start pid={proc.pid}\nargs={args}')
-        logger.trace(f'{taskno}) conf={conf}')
-
-        outs = await proc.communicate()
-        elapsed = current_timestamp() - start_ts
-        returncode = proc.returncode
-        pid = proc.pid
-
-        logger.debug(f'{taskno}) subprocess end pid={pid} rc={returncode} elapsed={elapsed}')
-
-        for i, out_name in enumerate(('stdout', 'stderr', )):
-            path = paths.get(out_name)
-
-            if path is None:
-                logger.debug(f'{taskno}) name={out_name} no-file')
-
-            else:
-                logger.trace(f'{taskno}) write name={out_name} file={path}')
-
-                await path_write(path, outs[i].decode('utf-8'))
-
-    except OSError as e:
-        logger.error(f'{taskno}) err={e.errno} {e.strerror}')
-
-        returncode = e.errno
-
-    retval = {
-        'returncode': returncode,
-        'pid': pid,
-        'paths' : paths,
-    }
-
-    return retval
-
-
-async def exec_module(taskno:int, message:typing.Dict, worker_key:str, worker:typing.Dict, exec_params:typing.Dict):
-
-    mod_name = worker['module']
-    func_name = worker['function']
-
-    module = importlib.import_module(mod_name)
-    func = getattr(module, func_name)
-
-    return await func(taskno, message['peername'], exec_params)
-
-
 async def _on_message(message:typing.Dict, taskno:int):
 
     logger.debug(f'task={taskno} receive message={message}')
@@ -257,9 +170,7 @@ async def _on_message(message:typing.Dict, taskno:int):
 
     memory.helper.stats_incr(__name__, 'event')
 
-    #request = copy.deepcopy(message['request'])
     request = message['request']
-
     worker_key = request['worker-key']
     worker = memory.get_worker(worker_key)
 
@@ -280,11 +191,14 @@ async def _on_message(message:typing.Dict, taskno:int):
         error = None
 
         try:
-            procby = 'exec_' + worker['type']
-            memory.helper.stats_incr(__name__, 'types', procby)
+            module_name = worker['module']
+            handler = worker['handler']
 
-            coro = globals()[procby]
-            retval = await coro(taskno, message, worker_key, worker, exec_params)
+            memory.helper.stats_incr(__name__, 'handler', f'{module_name}::{handler}')
+            module = importlib.import_module(module_name)
+            coro = getattr(module, handler)
+
+            retval = await coro(taskno, message['peername'], worker_key, worker, exec_params)
 
         except Exception as e:
 

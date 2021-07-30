@@ -3,6 +3,7 @@ import logging
 import json
 import collections
 import sys
+import asyncio
 
 from .. import *
 from ..utils import *
@@ -14,21 +15,23 @@ logger = logging.getLogger(__name__)
 memory = get_memory()
 
 
-async def handle_any(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_any(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
 
-    logger.warning(f'handle_any:{taskno}) {peername} {arg_exec_params}, NOOP')
+    logger.warning(f'handle_any:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     return None
 
 
-async def handle_dump_memory(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_dump_memory(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
 
-    logger.debug(f'handle_dump_memory:{taskno}) {peername} {arg_exec_params}')
+    logger.debug(f'handle_dump_memory:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     return memory.raw()
 
 
-async def handle_list_jobs(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_list_jobs(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
+
+    logger.debug(f'handle_list_jobs:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     key = arg_exec_params['kwargs'].get('key', 'response')
     order_by = arg_exec_params['kwargs'].get('order-by', 'desc')
@@ -68,7 +71,9 @@ async def handle_list_jobs(taskno:int, peername, arg_exec_params:typing.Dict):
     return ret
 
 
-async def handle_show_job(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_show_job(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
+
+    logger.debug(f'handle_show_job:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     job = arg_exec_params['args'][0]
     key = arg_exec_params['kwargs'].get('key', 'response')
@@ -107,9 +112,9 @@ async def handle_show_job(taskno:int, peername, arg_exec_params:typing.Dict):
     return ret
 
 
-async def handle_be_master(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_be_master(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
 
-    logger.debug(f'handle_be_master:{taskno}) {peername} {arg_exec_params}')
+    logger.debug(f'handle_be_master:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     listen_port = memory.get_const('batchq.netlistener', 'listen-port')
     active_hosts = memory.get_val('batchq.producer', 'active-hosts')
@@ -134,9 +139,9 @@ async def handle_be_master(taskno:int, peername, arg_exec_params:typing.Dict):
     return None
 
 
-async def handle_change_master(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_change_master(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
 
-    logger.debug(f'handle_change_master:{taskno}) {peername} {arg_exec_params}')
+    logger.debug(f'handle_change_master:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     peer_host = arg_exec_params['kwargs']
 
@@ -147,9 +152,9 @@ async def handle_change_master(taskno:int, peername, arg_exec_params:typing.Dict
     return None
 
 
-async def handle_report(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_report(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
 
-    logger.debug(f'handle_report:{taskno}) {peername} {arg_exec_params}')
+    logger.debug(f'handle_report:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     kwargs = arg_exec_params['kwargs']
     exec_params = kwargs['exec-params']
@@ -163,9 +168,9 @@ async def handle_report(taskno:int, peername, arg_exec_params:typing.Dict):
     return None
 
 
-async def handle_ping(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_ping(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
 
-    logger.debug(f'handle_ping:{taskno}) {peername} {arg_exec_params}')
+    logger.debug(f'handle_ping:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     curr_ts = current_timestamp()
     peeraddr = peername[0]
@@ -208,9 +213,9 @@ async def handle_ping(taskno:int, peername, arg_exec_params:typing.Dict):
     return None
 
 
-async def handle_pong(taskno:int, peername, arg_exec_params:typing.Dict):
+async def handle_pong(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
 
-    logger.debug(f'handle_pong:{taskno}) {peername} {arg_exec_params}')
+    logger.debug(f'handle_pong:{taskno}) {peername} {worker_key} {arg_exec_params}')
 
     active_hosts = arg_exec_params['kwargs']['active-hosts']
 
@@ -221,5 +226,85 @@ async def handle_pong(taskno:int, peername, arg_exec_params:typing.Dict):
     memory.set_val('batchq.producer', 'active-hosts', active_hosts)
 
     return None
+
+
+async def handle_subproc(taskno:int, peername, worker_key:str, worker:typing.Dict, arg_exec_params:typing.Dict):
+
+    logger.debug(f'handle_subproc:{taskno}) {peername} {worker_key} {arg_exec_params}')
+
+    memory.helper.stats_incr(__name__, 'subproc', worker_key)
+
+    returncode = -1
+    proc = -1
+    paths = None
+
+    try:
+        execbin = worker.get('execbin')
+        if execbin is not None:
+            execbin = expand_placeholder(execbin)
+
+        args = [
+            execbin,
+            expand_placeholder(worker['program']),
+        ]
+
+        args += arg_exec_params['args']
+        args = [ str(v) for v in args if v is not None ]
+
+        static_env = {
+            'BQ_WORKER_KEY': worker_key,
+            'BQ_CLIENT': peername[0],
+            'BQ_SESSION': arg_exec_params.get('job'),
+            'BQ_TASKNO': taskno,
+        }
+
+        env = dict_deep_merge(arg_exec_params['kwargs'], static_env)
+        env = { k: expand_placeholder(str(v)) for k, v in env.items() if v is not None }
+
+        path_params = { 'task;taskno': taskno, }
+        paths = { k: path_expand_placeholder(worker[k], path_params=path_params) if k in worker else None for k in ('cwd', 'stdout', 'stderr', ) }
+
+        conf = {
+            'stdout': asyncio.subprocess.PIPE,
+            'stderr': asyncio.subprocess.PIPE,
+            'env': env,
+            'cwd': paths.get('cwd'),
+        }
+
+        start_ts = current_timestamp()
+        proc = await asyncio.create_subprocess_exec(*args, **conf)
+        logger.debug(f'{taskno}) subprocess start pid={proc.pid}\nargs={args}')
+        logger.trace(f'{taskno}) conf={conf}')
+
+        outs = await proc.communicate()
+        elapsed = current_timestamp() - start_ts
+        returncode = proc.returncode
+        pid = proc.pid
+
+        logger.debug(f'{taskno}) subprocess end pid={pid} rc={returncode} elapsed={elapsed}')
+
+        for i, out_name in enumerate(('stdout', 'stderr', )):
+            path = paths.get(out_name)
+
+            if path is None:
+                logger.debug(f'{taskno}) name={out_name} no-file')
+
+            else:
+                logger.trace(f'{taskno}) write name={out_name} file={path}')
+
+                await path_write(path, outs[i].decode('utf-8'))
+
+    except OSError as e:
+        logger.error(f'{taskno}) err={e.errno} {e.strerror}')
+
+        returncode = e.errno
+
+    retval = {
+        'returncode': returncode,
+        'pid': pid,
+        'paths' : paths,
+    }
+
+    return retval
 
 #

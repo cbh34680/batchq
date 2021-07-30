@@ -101,14 +101,11 @@ def gen_worker():
             # [option default='later']
             'when': 'immediate',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
 
             # [option default='handle_any']
-            'function': 'handle_dump_memory',
+            'handler': 'handle_dump_memory',
 
             # [option default=True]
             'increment-running': False,
@@ -123,14 +120,11 @@ def gen_worker():
             # [option default='later']
             'when': 'immediate',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
 
             # [option default='handle_any']
-            'function': 'handle_list_jobs',
+            'handler': 'handle_list_jobs',
 
             # [option default=True]
             'increment-running': False,
@@ -145,14 +139,11 @@ def gen_worker():
             # [option default='later']
             'when': 'immediate',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
 
             # [option default='handle_any']
-            'function': 'handle_show_job',
+            'handler': 'handle_show_job',
 
             # [option default=True]
             'increment-running': False,
@@ -167,14 +158,11 @@ def gen_worker():
             # [option default='later']
             'when': 'immediate',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
 
             # [option default='handle_any']
-            'function': 'handle_be_master',
+            'handler': 'handle_be_master',
 
             # [option default=True]
             'increment-running': False,
@@ -189,14 +177,11 @@ def gen_worker():
             # [option default='later']
             'when': 'immediate',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
 
             # [option default='handle_any']
-            'function': 'handle_change_master',
+            'handler': 'handle_change_master',
 
             # [option default=True]
             'increment-running': False,
@@ -211,14 +196,11 @@ def gen_worker():
             # [option default='later']
             #'when': 'later',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
 
             # [option default='handle_any']
-            'function': 'handle_report',
+            'handler': 'handle_report',
 
             # [option default=True]
             'increment-running': False,
@@ -233,14 +215,11 @@ def gen_worker():
             # [option default='later']
             #'when': 'later',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
 
             # [option default='handle_any']
-            'function': 'handle_ping',
+            'handler': 'handle_ping',
 
             # [option default=True]
             'increment-running': False,
@@ -255,14 +234,11 @@ def gen_worker():
             # [option default='later']
             #'when': 'later',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
 
             # [option default='handle_any']
-            'function': 'handle_pong',
+            'handler': 'handle_pong',
 
             # [option default=True]
             'increment-running': False,
@@ -274,6 +250,15 @@ def gen_worker():
             },
         },
         'app1': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'handler': 'handle_subproc',
+
             # [option]
             'execbin': '/bin/bash',
 

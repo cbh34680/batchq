@@ -76,14 +76,14 @@ async def start_tasks(memory:batchq.Memory):
     #factories, factories2 = itertools.tee(factories)
 
     for factory in factories:
-        mod_name = factory.__module__
+        module_name = factory.__module__
 
-        logger.trace(f'call {mod_name}.ainit()')
+        logger.trace(f'call {module_name}.ainit()')
         await factory.ainit()
 
-        memory.create_event(mod_name, 'ready')
-        memory.create_event(mod_name, 'end')
-        memory.create_queue(mod_name)
+        memory.create_event(module_name, 'ready')
+        memory.create_event(module_name, 'end')
+        memory.create_queue(module_name)
 
     logger.trace(f'create tasks')
     tasks = [ await factory.create_tasks() for factory in factories ]
