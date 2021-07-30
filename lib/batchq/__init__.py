@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 _EMPTY_WORKER = {
     'when': 'later',
-    'type': 'subproc',
     'module': 'batchq.handlers.simple',
     'handler': 'handle_any',
     'increment-running': True,
@@ -356,6 +355,7 @@ class Memory():
 
         worker = self.config['worker'][key]
         worker = dict_deep_merge(_EMPTY_WORKER, worker)
+        worker['key'] = key
 
         return worker
 

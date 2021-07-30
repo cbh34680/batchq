@@ -132,7 +132,7 @@ async def raii_set_end_event():
             memory.get_event(__name__, 'end').set()
 
 
-async def do_send_report(arg_message, type, exec_params, result):
+async def do_send_report(arg_message, exec_params, result):
 
     peeraddr = arg_message['peername'][0]
 
@@ -147,7 +147,6 @@ async def do_send_report(arg_message, type, exec_params, result):
             'exec-params': {
                 'kwargs': {
                     'worker-key': arg_message['request']['worker-key'],
-                    'type': type,
                     'exec-params': exec_params,
                     'result': result,
                 },
@@ -171,8 +170,7 @@ async def _on_message(message:typing.Dict, taskno:int):
     memory.helper.stats_incr(__name__, 'event')
 
     request = message['request']
-    worker_key = request['worker-key']
-    worker = memory.get_worker(worker_key)
+    worker = memory.get_worker(request['worker-key'])
 
     start_dt = utc_datetime()
     start_ts = current_timestamp()
@@ -198,7 +196,7 @@ async def _on_message(message:typing.Dict, taskno:int):
             module = importlib.import_module(module_name)
             coro = getattr(module, handler)
 
-            retval = await coro(taskno, message['peername'], worker_key, worker, exec_params)
+            retval = await coro(taskno, message['peername'], worker, exec_params)
 
         except Exception as e:
 
@@ -225,7 +223,7 @@ async def _on_message(message:typing.Dict, taskno:int):
             await jobutil.save_data('result', message['peername'], job, result)
 
         if exec_params['send-report']:
-            await do_send_report(message, worker['type'], exec_params, result)
+            await do_send_report(message, exec_params, result)
             memory.helper.stats_incr(__name__, "send-report")
 
         memory.helper.stats_incr(__name__, "success" if success else "error")
