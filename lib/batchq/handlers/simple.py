@@ -232,7 +232,7 @@ async def handle_subproc(taskno:int, peername, worker:typing.Dict, exec_params:t
     logger.debug(f'handle_subproc:{taskno}) {peername} {exec_params}')
 
     worker_key = worker['key']
-    memory.helper.stats_incr(__name__, 'subproc', )
+    memory.helper.stats_incr(__name__, 'subproc', worker_key)
 
     returncode = -1
     proc = -1
