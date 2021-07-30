@@ -259,6 +259,9 @@ def gen_worker():
             # [option default='handle_any']
             'handler': 'handle_subproc',
 
+            # [option default=True]
+            #'increment-running': True,
+
             # [option]
             'execbin': '/bin/bash',
 
