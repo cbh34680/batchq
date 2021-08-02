@@ -273,8 +273,8 @@ def gen_worker():
 
             # [option]
             'cwd': '{env;BQ_APP_WORK}/app-example/app1',
-            'stdout': '{env;BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskno}.out',
-            'stderr': '{env;BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskno}.err',
+            'stdout': '{env;BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.out',
+            'stderr': '{env;BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.err',
 
             # [auto]
             'exec-params': {

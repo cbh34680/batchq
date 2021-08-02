@@ -162,9 +162,9 @@ async def do_send_report(arg_message, exec_params, result):
     memory.helper.stats_incr(__name__, 'report')
 
 
-async def _on_message(message:typing.Dict, taskno:int):
+async def _on_message(message:typing.Dict, taskid:int):
 
-    logger.debug(f'task={taskno} receive message={message}')
+    logger.debug(f'task={taskid} receive message={message}')
     assert message is not None
 
     memory.helper.stats_incr(__name__, 'event')
@@ -196,7 +196,7 @@ async def _on_message(message:typing.Dict, taskno:int):
             module = importlib.import_module(module_name)
             coro = getattr(module, handler)
 
-            retval = await coro(taskno, message['peername'], worker, exec_params)
+            retval = await coro(taskid, message['peername'], worker, exec_params)
 
         except Exception as e:
 
@@ -231,12 +231,12 @@ async def _on_message(message:typing.Dict, taskno:int):
         return result
 
 
-async def on_message(message:typing.Dict, taskno:int=0):
+async def on_message(message:typing.Dict, taskid:int=0):
 
     running = memory.get_val(__name__, 'running')
     logger.trace(f'before _on_message(): current running is {running}')
 
-    result = await _on_message(message, taskno)
+    result = await _on_message(message, taskid)
 
     running = memory.get_val(__name__, 'running')
     logger.trace(f'after _on_message(): current running is {running}')
@@ -267,13 +267,13 @@ async def on_exec_request(message, response):
     return False
 
 
-async def _main(taskno:int):
+async def _main(taskid:int):
 
     queue = memory.get_queue(__name__)
 
     async with raii_set_end_event():
         async for i, message in queutil.get_message_until_eom(queue, where=here()):
-            _ = await on_message(message, taskno)
+            _ = await on_message(message, taskid)
 
 
 class _MyTaskFactory(TaskFactory):
@@ -310,9 +310,9 @@ class _MyTaskFactory(TaskFactory):
         hook = lambda: memory.set_val(__name__, 'softlimit', self.num_tasks)
         memory.append_val_hook(__name__, 'softlimit', 'unset_val', hook=hook)
 
-    async def main(self, taskno:int):
+    async def main(self, taskid:int):
         try:
-            await _main(taskno)
+            await _main(taskid)
 
         except asyncio.CancelledError:
             sys_exit(f'catch cancel')
@@ -343,10 +343,10 @@ class _MyTaskFactory(TaskFactory):
 
         for i in range(self.num_tasks):
 
-            taskno = i + 1
+            taskid = i + 1
 
-            name = f'{__name__}:main-task-{taskno}'
-            tasks.append(asyncio.create_task(self.main(taskno), name=name))
+            name = f'{__name__}:main-task-{taskid}'
+            tasks.append(asyncio.create_task(self.main(taskid), name=name))
             logger.trace(f'regist consumer name={name}')
 
         return tasks
