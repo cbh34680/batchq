@@ -89,15 +89,18 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
     logger.trace(f'hosts={hosts}')
 
     pos = 0
-    limit = len(requests)
+    len_requests = len(requests)
 
     for host in hosts:
-        if pos >= limit:
+        if pos >= len_requests:
             break
 
         softlimit = host['softlimit']
 
-        host_requests = requests[pos: pos+softlimit]
+        # max 10 requests at a time
+        pos_end = 10 if softlimit >= 10 else softlimit
+
+        host_requests = requests[pos: pos_end]
 
         if not host_requests:
             break
@@ -107,7 +110,7 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
 
         pos += len(host_requests)
 
-    if pos < limit:
+    if pos < len_requests:
         for request in requests[pos:]:
             yield None, request, None
 
@@ -158,7 +161,7 @@ async def flush_requests(requests:typing.List, hosts:typing.List):
             path_params = { 'task;filename': filename, }
             await memory.helper.path_rename(__name__, rename_key, orig=orig, path_params=path_params)
 
-    return retry_high + retry_low
+    return retry_high, retry_low
 
 
 async def _main():
@@ -190,7 +193,8 @@ async def _main():
                     prev_len = len(requests)
 
                     logger.trace(f'{i}) before request={len(requests)}')
-                    requests = await flush_requests(requests, hosts)
+                    retry_high, retry_low = await flush_requests(requests, hosts)
+                    requests = retry_high + retry_low
                     logger.trace(f'{i}) after request={len(requests)}')
 
                     post_len = len(requests)
@@ -198,7 +202,7 @@ async def _main():
                     incr_key = 'flush'
 
                     if requests:
-                        timeout = 20.0 if prev_len == post_len else 10.0
+                        timeout = 10.0 if retry_high else 20.0
 
                 else:
                     logger.warning(f'{i}) hosts is empty, remaining={len(requests)}')
