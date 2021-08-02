@@ -153,7 +153,7 @@ async def flush_requests(requests:typing.List, hosts:typing.List):
             path_params = { 'task;filename': filename, }
             await memory.helper.path_rename(__name__, rename_key, orig=orig, path_params=path_params)
 
-    return retry_high + retry_low
+    return retry_high, retry_low
 
 
 async def _main():
@@ -185,7 +185,8 @@ async def _main():
                     prev_len = len(requests)
 
                     logger.trace(f'{i}) before request={len(requests)}')
-                    requests = await flush_requests(requests, hosts)
+                    retry_high, retry_low = await flush_requests(requests, hosts)
+                    requests = retry_high + retry_low
                     logger.trace(f'{i}) after request={len(requests)}')
 
                     post_len = len(requests)
@@ -193,7 +194,13 @@ async def _main():
                     incr_key = 'flush'
 
                     if requests:
-                        timeout = 20.0 if prev_len == post_len else 10.0
+                        #timeout = 20.0 if prev_len == post_len else 10.0
+
+                        if retry_high:
+                            timeout = 5.0
+
+                        else:
+                            timeout = 20 if prev_len == post_len else 10.0
 
                 else:
                     logger.warning(f'{i}) hosts is empty, remaining={len(requests)}')
@@ -203,9 +210,7 @@ async def _main():
 
             else:
                 incr_key = '********** no-works **********'
-
                 logger.error(f'{i}) ********** no-works **********')
-
                 assert False
 
         else:
