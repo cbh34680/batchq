@@ -5,6 +5,7 @@ import typing
 import functools
 import logging
 import os.path
+import collections
 
 from . import *
 from .utils import *
@@ -156,6 +157,8 @@ async def flush_requests(requests:typing.List, hosts:typing.List):
     return retry_high, retry_low
 
 
+NextTimeouts = collections.namedtuple('NextTimeouts', ['new_record', 'exist_high', 'accepted', 'notdecr', 'nohosts'])
+
 async def _main():
 
     requests = []
@@ -165,7 +168,8 @@ async def _main():
     num_put = await put_files_to_queue(queue)
     logger.info(f'put {num_put} message to queue')
 
-    #await asyncio.sleep(5)
+    TIMEOUTS = NextTimeouts(**{ k:v for k, v in zip(NextTimeouts._fields, memory.get_const(__name__, 'next-timeouts')) })
+    logger.info(f'TIMEOUTS={TIMEOUTS}')
 
     timeout = None
     timeout_query = lambda: timeout
@@ -197,16 +201,16 @@ async def _main():
                         #timeout = 20.0 if prev_len == post_len else 10.0
 
                         if retry_high:
-                            timeout = 5.0
+                            timeout = TIMEOUTS.exist_high
 
                         else:
-                            timeout = 20.0 if prev_len == post_len else 10.0
+                            timeout = TIMEOUTS.notdecr if prev_len == post_len else TIMEOUTS.accepted
 
                 else:
                     logger.warning(f'{i}) hosts is empty, remaining={len(requests)}')
 
                     incr_key = 'no-hosts'
-                    timeout = 30.0
+                    timeout = TIMEOUTS.nohosts
 
             else:
                 incr_key = '********** no-works **********'
@@ -220,7 +224,7 @@ async def _main():
             requests.append(message)
 
             incr_key = 'append'
-            timeout = 1.0
+            timeout = TIMEOUTS.new_record
 
         memory.helper.stats_incr(__name__, incr_key)
 
