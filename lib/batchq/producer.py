@@ -49,6 +49,40 @@ async def put_valid_to_queue(queue:asyncio.Queue):
     return num_put
 
 
+async def query_each_host_requests(host, host_requests):
+
+    lines = []
+    for request in host_requests:
+        try:
+            async with aiofiles.open(request['path'], mode='r') as fr:
+
+                async for line in fr:
+                    lines.append(line.strip())
+
+                    # only one line
+                    break
+
+        except FileNotFoundError as e:
+            logger.warning(f'catch {type(e)} exception={e}, ignore')
+
+    ll = len(lines)
+
+    if ll > 0:
+        try:
+            peername = host['peername']
+            host['request-ts'] = current_timestamp()
+
+            async for i, line in strmutil.readlines_after_writelines(peername, lines, timeout=5.0, where=here()):
+
+                request = host_requests[i]
+                response = textutil.text2response(line)
+
+                yield host, request, response
+
+        except Exception as e:
+            logger.error(f'catch exception={type(e)}: {e}')
+
+
 async def query_each_requests(requests:typing.List, hosts:typing.List):
 
     hosts = sorted(hosts, key=functools.cmp_to_key(cmp_hostinfo))
@@ -63,44 +97,15 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
 
         softlimit = host['softlimit']
 
-        lines = []
         host_requests = requests[pos: pos+softlimit]
 
         if not host_requests:
             break
 
-        for request in host_requests:
-            try:
-                async with aiofiles.open(request['path'], mode='r') as fr:
-                    num_lines = 0
-                    async for line in fr:
-                        lines.append(line.strip())
-                        num_lines += 1
-                    assert num_lines == 1
+        async for host, request, response in query_each_host_requests(host, host_requests):
+            yield host, request, response
 
-            except FileNotFoundError as e:
-                logger.warning(f'catch {type(e)} exception={e}, ignore')
-
-        ll = len(lines)
-        assert ll <= softlimit
-        assert ll <= len(host_requests)
-
-        if ll > 0:
-            try:
-                peername = host['peername']
-                host['request-ts'] = current_timestamp()
-
-                async for i, line in strmutil.readlines_after_writelines(peername, lines, timeout=5.0, where=here()):
-
-                    request = host_requests[i]
-                    response = textutil.text2response(line)
-
-                    yield host, request, response
-
-            except Exception as e:
-                logger.error(f'catch exception={type(e)}: {e}')
-
-        pos += softlimit
+        pos += len(host_requests)
 
     if pos < limit:
         for request in requests[pos:]:
