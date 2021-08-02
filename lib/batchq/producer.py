@@ -49,68 +49,60 @@ async def put_valid_to_queue(queue:asyncio.Queue):
     return num_put
 
 
-async def query_each_host_requests(host, host_requests):
-
-    lines = []
-    for request in host_requests:
-        try:
-            async with aiofiles.open(request['path'], mode='r') as fr:
-
-                async for line in fr:
-                    lines.append(line.strip())
-
-                    # only one line
-                    break
-
-        except FileNotFoundError as e:
-            logger.warning(f'catch {type(e)} exception={e}, ignore')
-
-    ll = len(lines)
-
-    if ll > 0:
-        try:
-            peername = host['peername']
-            host['request-ts'] = current_timestamp()
-
-            async for i, line in strmutil.readlines_after_writelines(peername, lines, timeout=5.0, where=here()):
-
-                request = host_requests[i]
-                response = textutil.text2response(line)
-
-                yield host, request, response
-
-        except Exception as e:
-            logger.error(f'catch exception={type(e)}: {e}')
-
-
 async def query_each_requests(requests:typing.List, hosts:typing.List):
 
     hosts = sorted(hosts, key=functools.cmp_to_key(cmp_hostinfo))
     logger.trace(f'hosts={hosts}')
 
     pos = 0
-    len_requests = len(requests)
+    limit = len(requests)
 
     for host in hosts:
-        if pos >= len_requests:
+        if pos >= limit:
             break
 
         softlimit = host['softlimit']
 
-        # max 10 requests at a time
-        pos_end = 10 if softlimit >= 10 else softlimit
-
-        host_requests = requests[pos: pos_end]
+        lines = []
+        host_requests = requests[pos: pos+softlimit]
 
         if not host_requests:
             break
 
-        async for host, request, response in query_each_host_requests(host, host_requests):
-            yield host, request, response
+        for request in host_requests:
+            try:
+                async with aiofiles.open(request['path'], mode='r') as fr:
+                    num_lines = 0
+                    async for line in fr:
+                        lines.append(line.strip())
+                        num_lines += 1
+                    assert num_lines == 1
 
-        pos += len(host_requests)
+            except FileNotFoundError as e:
+                logger.warning(f'catch {type(e)} exception={e}, ignore')
 
-    if pos < len_requests:
+        ll = len(lines)
+        assert ll <= softlimit
+        assert ll <= len(host_requests)
+
+        if ll > 0:
+            try:
+                peername = host['peername']
+                host['request-ts'] = current_timestamp()
+
+                async for i, line in strmutil.readlines_after_writelines(peername, lines, timeout=5.0, where=here()):
+
+                    request = host_requests[i]
+                    response = textutil.text2response(line)
+
+                    yield host, request, response
+
+            except Exception as e:
+                logger.error(f'catch exception={type(e)}: {e}')
+
+        pos += softlimit
+
+    if pos < limit:
         for request in requests[pos:]:
             yield None, request, None
 
@@ -161,7 +153,7 @@ async def flush_requests(requests:typing.List, hosts:typing.List):
             path_params = { 'task;filename': filename, }
             await memory.helper.path_rename(__name__, rename_key, orig=orig, path_params=path_params)
 
-    return retry_high, retry_low
+    return retry_high + retry_low
 
 
 async def _main():
@@ -193,8 +185,7 @@ async def _main():
                     prev_len = len(requests)
 
                     logger.trace(f'{i}) before request={len(requests)}')
-                    retry_high, retry_low = await flush_requests(requests, hosts)
-                    requests = retry_high + retry_low
+                    requests = await flush_requests(requests, hosts)
                     logger.trace(f'{i}) after request={len(requests)}')
 
                     post_len = len(requests)
@@ -202,7 +193,7 @@ async def _main():
                     incr_key = 'flush'
 
                     if requests:
-                        timeout = 10.0 if retry_high else 20.0
+                        timeout = 20.0 if prev_len == post_len else 10.0
 
                 else:
                     logger.warning(f'{i}) hosts is empty, remaining={len(requests)}')
