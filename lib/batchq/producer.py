@@ -55,10 +55,10 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
     logger.trace(f'hosts={hosts}')
 
     pos = 0
-    limit = len(requests)
+    len_request = len(requests)
 
     for host in hosts:
-        if pos >= limit:
+        if pos >= len_request:
             break
 
         softlimit = host['softlimit']
@@ -72,11 +72,11 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
         for request in host_requests:
             try:
                 async with aiofiles.open(request['path'], mode='r') as fr:
-                    num_lines = 0
                     async for line in fr:
                         lines.append(line.strip())
-                        num_lines += 1
-                    assert num_lines == 1
+
+                        # one record only
+                        break
 
             except FileNotFoundError as e:
                 logger.warning(f'catch {type(e)} exception={e}, ignore')
@@ -100,9 +100,9 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
             except Exception as e:
                 logger.error(f'catch exception={type(e)}: {e}')
 
-        pos += softlimit
+        pos += len(host_requests)
 
-    if pos < limit:
+    if pos < len_request:
         for request in requests[pos:]:
             yield None, request, None
 
