@@ -200,7 +200,7 @@ async def _main():
                             timeout = 5.0
 
                         else:
-                            timeout = 20 if prev_len == post_len else 10.0
+                            timeout = 20.0 if prev_len == post_len else 10.0
 
                 else:
                     logger.warning(f'{i}) hosts is empty, remaining={len(requests)}')
