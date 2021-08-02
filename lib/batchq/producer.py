@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 memory = get_memory()
 
 
-async def put_valid_to_queue(queue:asyncio.Queue):
+async def put_files_to_queue(queue:asyncio.Queue):
 
     path_params = { 'task;filename-suffix': 'dummy', }
     dummy_path = memory.get_path('batchq.splitter', 'valid', path_params=path_params)
@@ -162,7 +162,7 @@ async def _main():
 
     queue = memory.get_queue(__name__)
 
-    num_put = await put_valid_to_queue(queue)
+    num_put = await put_files_to_queue(queue)
     logger.info(f'put {num_put} message to queue')
 
     #await asyncio.sleep(5)
