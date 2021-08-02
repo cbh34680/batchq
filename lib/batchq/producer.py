@@ -82,11 +82,7 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
             except FileNotFoundError as e:
                 logger.warning(f'catch {type(e)} exception={e}, ignore')
 
-        ll = len(lines)
-        assert ll <= softlimit
-        assert ll <= len(host_requests)
-
-        if ll > 0:
+        if lines:
             try:
                 peername = host['peername']
                 host['request-ts'] = current_timestamp()
