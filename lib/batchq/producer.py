@@ -157,7 +157,7 @@ async def flush_requests(requests:typing.List, hosts:typing.List):
     return retry_high, retry_low
 
 
-NextTimeouts = collections.namedtuple('NextTimeouts', ['new_record', 'exist_high', 'accepted', 'notdecr', 'nohosts'])
+NextTimeouts = collections.namedtuple('NextTimeouts', ['new_record', 'exist_high', 'exist_low', 'not_decr', 'no_hosts'])
 
 async def _main():
 
@@ -204,13 +204,13 @@ async def _main():
                             timeout = TIMEOUTS.exist_high
 
                         else:
-                            timeout = TIMEOUTS.notdecr if prev_len == post_len else TIMEOUTS.accepted
+                            timeout = TIMEOUTS.not_decr if prev_len == post_len else TIMEOUTS.exist_low
 
                 else:
                     logger.warning(f'{i}) hosts is empty, remaining={len(requests)}')
 
                     incr_key = 'no-hosts'
-                    timeout = TIMEOUTS.nohosts
+                    timeout = TIMEOUTS.no_hosts
 
             else:
                 incr_key = '********** no-works **********'
