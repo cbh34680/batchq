@@ -9,7 +9,7 @@ def gen_config():
 
     ret = {
         'meta': {
-            'version': '1.0.0',
+            'version': '1.0.1',
             'description': '',
         },
         'const': {
@@ -159,7 +159,7 @@ def gen_worker():
         },
         'be-master': {
             # [option default='later']
-            'when': 'immediate',
+            #'when': 'later',
 
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
@@ -178,7 +178,7 @@ def gen_worker():
         },
         'change-master': {
             # [option default='later']
-            'when': 'immediate',
+            #'when': 'later',
 
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
@@ -254,7 +254,7 @@ def gen_worker():
         },
         'world-end': {
             # [option default='later']
-            'when': 'later',
+            #'when': 'later',
 
             # [option default='batchq.handlers.simple']
             #'module': 'batchq.handlers.simple',
