@@ -297,7 +297,7 @@ class _MyTaskFactory(TaskFactory):
 
         await memory.helper.load_path_val(__name__, 'softlimit', defval=self.num_tasks, converter=int)
 
-        fpartial = functools.partial(on_timer_helper, on_timer, devide=5, remainder=1)
+        fpartial = functools.partial(on_timer_helper, on_timer, devide=3, remainder=1)
         memory.append_callback_coro('batchq.regularly', 'on-timer', fpartial)
 
         try:
