@@ -145,7 +145,9 @@ async def handle_change_master(taskid:int, peername, worker:typing.Dict, exec_pa
 
     peer_host = exec_params['kwargs']
 
+    old_master = memory.get_val('batchq.consumer', 'master-host')
     new_master = '{}:{}'.format(peername[0], peer_host['listen-port'])
+    logger.info(f'change master from={old_master} to={new_master}')
 
     await memory.helper.path_write('batchq.consumer', 'master-host', new_master)
 
