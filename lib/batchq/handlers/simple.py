@@ -240,10 +240,9 @@ async def handle_world_end(taskid:int, peername, worker:typing.Dict, exec_params
         other_hosts = ( v for v in active_hosts.values() if v['hostid'] != my_hostid )
 
         for host in other_hosts:
-            peername = host['peername']
 
             message = {
-                'peername': peername,
+                'peername': host['peername'],
                 'payload': {
                     'worker-key': 'world-end',
                     'exec-params': {
@@ -257,7 +256,7 @@ async def handle_world_end(taskid:int, peername, worker:typing.Dict, exec_params
             queue = memory.get_queue('batchq.postman')
             await queutil.put(queue, message, where=here())
 
-            logger.info(f'propagate peername={peername}')
+            logger.info('propagate peername={}'.format(str(host['peername'])))
 
     logger.info(f'peer={peername}) receive world-end, shutdown local 1 sec later')
     loop = asyncio.get_running_loop()
