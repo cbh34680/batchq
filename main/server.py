@@ -44,19 +44,7 @@ def unix_signal_handler(signum, signame):
 
     logger.info(f'receive signal={signum} signame={signame}')
 
-    loop = asyncio.get_running_loop()
-    loop.set_debug(True)
-
-    memory = batchq.get_memory()
-    memory.get_event('batchq', 'local-end').set()
-
-    for task in asyncio.all_tasks():
-        task_name = task.get_name()
-
-        if 'cancellable' in task_name:
-            if not task.done():
-                task.cancel()
-                logger.trace(f'send cancel to {task_name}')
+    batchq.local_end()
 
 
 async def start_tasks(memory:batchq.Memory):

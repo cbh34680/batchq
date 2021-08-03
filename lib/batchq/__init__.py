@@ -21,6 +21,7 @@ __all__ = [
     'init_library',
     'get_memory',
     'PropObject',
+    'local_end',
 ]
 
 logger = logging.getLogger(__name__)
@@ -402,5 +403,26 @@ class PropObject(object):
     def __repr__(self):
 
         return str(self.__dict__)
+
+
+def local_end():
+
+    memory = get_memory()
+    memory.get_event('batchq', 'local-end').set()
+
+    loop = asyncio.get_running_loop()
+    loop.set_debug(True)
+
+    curr_task = asyncio.current_task()
+
+    for task in asyncio.all_tasks():
+        task_name = task.get_name()
+
+        if task != curr_task:
+            if 'cancellable' in task_name:
+                if not task.done():
+
+                    task.cancel()
+                    logger.trace(f'send cancel to {task_name}')
 
 #

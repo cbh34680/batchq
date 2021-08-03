@@ -252,6 +252,29 @@ def gen_worker():
                 'send-report': False,
             },
         },
+        'world-end': {
+            # [option default='later']
+            'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'handler': 'handle_world_end',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                'kwargs': {
+                    'propagate': True,
+                },
+
+                # [option default=True]
+                'send-report': False,
+            },
+        },
         'app1': {
             # [option default='later']
             #'when': 'later',

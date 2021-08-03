@@ -181,7 +181,7 @@ async def handle_ping(taskid:int, peername, worker:typing.Dict, exec_params:typi
     peer_host['loadavg'] = tuple(peer_host['loadavg'])
 
     active_hosts = memory.get_val('batchq.producer', 'active-hosts')
-    active_hosts = { k: v for k, v in active_hosts.items() if curr_ts - v['ping-ts'] < 120 and peer_hostid != v['hostid'] }
+    active_hosts = { k: v for k, v in active_hosts.items() if curr_ts - v['ping-ts'] < 120 and v['hostid'] != peer_hostid }
     active_hosts[peeraddr] = peer_host
     logger.debug(f'active-hosts={active_hosts}')
 
@@ -223,6 +223,40 @@ async def handle_pong(taskid:int, peername, worker:typing.Dict, exec_params:typi
         host['loadavg'] = tuple(host['loadavg'])
 
     memory.set_val('batchq.producer', 'active-hosts', active_hosts)
+
+    return None
+
+
+async def handle_world_end(taskid:int, peername, worker:typing.Dict, exec_params:typing.Dict):
+
+    logger.debug(f'handle_world_end:{taskid}) {peername} {exec_params}')
+
+    if exec_params['kwargs'].get('propagate'):
+
+        my_hostid = memory.get_val('batchq', 'hostid')
+        #my_hostid = '***'
+
+        active_hosts = memory.get_val('batchq.producer', 'active-hosts')
+        other_hosts = ( v for v in active_hosts.values() if v['hostid'] != my_hostid )
+
+        for host in other_hosts:
+            message = {
+                'peername': host['peername'],
+                'payload': {
+                    'worker-key': 'world-end',
+                    'exec-params': {
+                        'kwargs': {
+                            'propagate': False,
+                        },
+                    },
+                },
+            }
+
+            queue = memory.get_queue('batchq.postman')
+            await queutil.put(queue, message, where=here())
+
+    logger.info(f'peer={peername}) receive world-end, shutdown local immediate')
+    local_end()
 
     return None
 

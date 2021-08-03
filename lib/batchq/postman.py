@@ -91,7 +91,7 @@ class _MyTaskFactory(TaskFactory):
             await _main()
 
         except asyncio.CancelledError:
-            sys_exit(f'catch cancel')
+            logger.error(f'catch cancel')
 
         except Exception as e:
             sys_exit(f'catch {type(e)} exception={e}')
