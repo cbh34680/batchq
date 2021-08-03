@@ -256,8 +256,9 @@ async def handle_world_end(taskid:int, peername, worker:typing.Dict, exec_params
             queue = memory.get_queue('batchq.postman')
             await queutil.put(queue, message, where=here())
 
-    logger.info(f'peer={peername}) receive world-end, shutdown local immediate')
-    local_end()
+    logger.info(f'peer={peername}) receive world-end, shutdown local 1 sec later')
+    loop = asyncio.get_running_loop()
+    loop.call_later(1.0, local_end)
 
     return None
 
