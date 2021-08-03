@@ -177,7 +177,7 @@ class _MyTaskFactory(TaskFactory):
 
     async def canceller(self):
 
-        await memory.get_event(__package__, 'world-end').wait()
+        await memory.get_event(__package__, 'local-end').wait()
 
         logger.trace('fired canceller')
 

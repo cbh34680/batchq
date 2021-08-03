@@ -56,13 +56,13 @@ class NamedQueue(asyncio.Queue):
 
 
 class Memory():
-    def __init__(self, config:typing.Dict, world_end:asyncio.Event):
+    def __init__(self, config:typing.Dict, local_end:asyncio.Event):
 
         self.config = config
 
         self.events = {
             __package__: {
-                'world-end': world_end,
+                'local-end': local_end,
             },
         }
 
@@ -380,11 +380,11 @@ class Memory():
         await self.reload_workers()
 
 
-async def init_library(config:typing.Dict, world_end:asyncio.Event):
+async def init_library(config:typing.Dict, local_end:asyncio.Event):
 
     global _memory
 
-    _memory = Memory(config, world_end)
+    _memory = Memory(config, local_end)
     await _memory.ainit()
 
     return _memory

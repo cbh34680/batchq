@@ -65,7 +65,7 @@ async def _main():
 
     await async_os_makedirs(watchdir, mode=0o700, exist_ok=True)
 
-    async for event in inoutil.receive_event_until_world_end(watchdir, mask):
+    async for event in inoutil.receive_event_until_local_end(watchdir, mask):
 
         logger.trace(event)
 

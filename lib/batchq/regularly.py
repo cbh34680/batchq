@@ -25,9 +25,9 @@ async def on_timer(num_times=0):
     else:
         memory.set_val(__package__, 'loadavg', (0.0, 0.0, 0.0, ))
 
-    if num_times % 6 == 2:
-        await memory.helper.path_println(__package__, 'last-shutdown', current_timestamp())
-        await memory.helper.path_println(__package__, 'last-memory', memory)
+    #if num_times % 6 == 2:
+    #    await memory.helper.path_println(__package__, 'last-shutdown', current_timestamp())
+    #    await memory.helper.path_println(__package__, 'last-memory', memory)
 
 
 async def _main():

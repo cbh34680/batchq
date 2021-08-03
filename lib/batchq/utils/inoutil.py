@@ -6,7 +6,7 @@ from .. import *
 
 
 __all__ = [
-    'receive_event_until_world_end',
+    'receive_event_until_local_end',
 ]
 
 pkg_logger = logging.getLogger(__package__)
@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 memory = get_memory()
 
 
-async def receive_event_until_world_end(watchdir, mask, *, event_ready:asyncio.Event=None):
+async def receive_event_until_local_end(watchdir, mask, *, event_ready:asyncio.Event=None):
 
-    world_end = memory.get_event('batchq', 'world-end')
+    local_end = memory.get_event('batchq', 'local-end')
 
     logger.info(f'WATCH({watchdir}) START MASK({mask})')
 
@@ -30,7 +30,7 @@ async def receive_event_until_world_end(watchdir, mask, *, event_ready:asyncio.E
 
             logger.trace(f'EVENT({event.mask}): {event.path}')
 
-            if world_end.is_set():
+            if local_end.is_set():
                 break
 
             yield event

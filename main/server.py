@@ -48,7 +48,7 @@ def unix_signal_handler(signum, signame):
     loop.set_debug(True)
 
     memory = batchq.get_memory()
-    memory.get_event('batchq', 'world-end').set()
+    memory.get_event('batchq', 'local-end').set()
 
     for task in asyncio.all_tasks():
         task_name = task.get_name()
@@ -133,13 +133,13 @@ async def prepare_files(memory:batchq.Memory):
         if create_pid_file:
             await memory.helper.path_remove('batchq', 'pid-save')
 
-            await memory.helper.path_println('batchq', 'last-shutdown', batchq.current_timestamp())
-            await memory.helper.path_println('batchq', 'last-memory', memory)
+            #await memory.helper.path_println('batchq', 'last-shutdown', batchq.current_timestamp())
+            #await memory.helper.path_println('batchq', 'last-memory', memory)
 
 
 async def aiomain(config:typing.Dict, loglevel):
     try:
-        world_end = asyncio.Event()
+        local_end = asyncio.Event()
 
         loop = asyncio.get_event_loop()
         loop.set_debug(logger.level <= logging.DEBUG)
@@ -153,7 +153,7 @@ async def aiomain(config:typing.Dict, loglevel):
             loop.add_signal_handler(signum, fpartial)
 
         logger.trace(f'library initialize')
-        memory = await batchq.init_library(config=config, world_end=world_end)
+        memory = await batchq.init_library(config=config, local_end=local_end)
 
         '''
         def dump_memory():

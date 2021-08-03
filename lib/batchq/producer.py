@@ -64,8 +64,11 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
 
         softlimit = host['softlimit']
 
+        end = pos + min(10, softlimit)
+        logger.debug(f'pos={pos} end={end} softlimit={softlimit}')
+
         lines = []
-        host_requests = requests[pos: pos+softlimit]
+        host_requests = requests[pos: end]
 
         if not host_requests:
             break
@@ -254,7 +257,7 @@ class _MyTaskFactory(TaskFactory):
 
     async def canceller(self):
 
-        await memory.get_event(__package__, 'world-end').wait()
+        await memory.get_event(__package__, 'local-end').wait()
 
         logger.trace('fired canceller')
 

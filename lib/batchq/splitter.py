@@ -67,7 +67,7 @@ async def _main():
     event_ready = memory.get_event(__name__, 'ready')
 
     evno = 0
-    async for event in inoutil.receive_event_until_world_end(watchdir, mask, event_ready=event_ready):
+    async for event in inoutil.receive_event_until_local_end(watchdir, mask, event_ready=event_ready):
 
         memory.helper.stats_incr(__name__, 'event')
 
