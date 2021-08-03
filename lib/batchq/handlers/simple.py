@@ -240,6 +240,7 @@ async def handle_world_end(taskid:int, peername, worker:typing.Dict, exec_params
         other_hosts = ( v for v in active_hosts.values() if v['hostid'] != my_hostid )
 
         for host in other_hosts:
+            print(f'******************************* {host}')
             message = {
                 'peername': host['peername'],
                 'payload': {
