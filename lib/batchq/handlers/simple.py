@@ -329,7 +329,7 @@ async def handle_subproc(taskid:int, peername, worker:typing.Dict, exec_params:t
                 await path_write(path, outs[i].decode('utf-8'))
 
     except OSError as e:
-        logger.error(f'{taskid}) err={e.errno} {e.strerror}')
+        logger.warning(f'{taskid}) err={e.errno} {e.strerror}')
 
         returncode = e.errno
 

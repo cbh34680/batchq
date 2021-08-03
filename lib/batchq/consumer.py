@@ -206,7 +206,7 @@ async def _on_message(message:typing.Dict, taskid:int):
                 'description': str(e),
             }
 
-            logger.error(f'exec_params={exec_params} exception={type(e)}: {e}')
+            logger.warning(f'exec_params={exec_params} exception={type(e)}: {e}')
 
         result = {
             'success': success,

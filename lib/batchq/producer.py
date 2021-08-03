@@ -98,7 +98,7 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
                     yield host, request, response
 
             except Exception as e:
-                logger.error(f'catch exception={type(e)}: {e}')
+                logger.warning(f'catch exception={type(e)}: {e}')
 
         pos += len(host_requests)
 

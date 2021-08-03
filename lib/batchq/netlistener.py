@@ -96,7 +96,7 @@ async def on_client_connected(reader:asyncio.StreamReader, writer:asyncio.Stream
             if request is None:
                 path_key = 'reject'
 
-                logger.error(f'reject line={line} response={response}')
+                logger.warning(f'reject line={line} response={response}')
 
             else:
                 path_key = 'accept'
@@ -128,7 +128,7 @@ async def on_client_connected(reader:asyncio.StreamReader, writer:asyncio.Stream
         await strmutil.writeline(writer, strmutil.TERMINATER, peername=peername, where=here())
 
     except Exception as e:
-        logger.error(f'peername={peername} exception={type(e)}: {e}')
+        logger.warning(f'peername={peername} exception={type(e)}: {e}')
 
     finally:
         writer.close()

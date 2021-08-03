@@ -30,7 +30,7 @@ async def process_line(lineno, line, evno, event_name):
             textutil.text2request(line)
 
         except Exception as e:
-            logger.error(f'catch exception={type(e)}: {e}')
+            logger.warning(f'catch exception={type(e)}: {e}')
 
             path_key = 'invalid'
             filename_suffix = f'{evno}_{event_name}'

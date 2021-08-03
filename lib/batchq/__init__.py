@@ -152,7 +152,7 @@ class Memory():
                         value = converter(value)
 
                     except ValueError as e:
-                        logger.error(f'catch {type(e)} exception={e}, set default({defval})')
+                        logger.warning(f'catch {type(e)} exception={e}, set default({defval})')
                         value = defval
 
                 if value is not None:
