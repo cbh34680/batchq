@@ -355,8 +355,6 @@ async def handle_subproc(taskid:int, peername, worker:typing.Dict, exec_params:t
             'BQ_CLIENT': peername[0],
             'BQ_SESSION': exec_params.get('job'),
             'BQ_TASKNO': taskid,
-            'BQ_STDOUT': paths.get('stdout'),
-            'BQ_STDERR': paths.get('stderr'),
         }
 
         if stdout:
