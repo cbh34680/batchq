@@ -79,7 +79,7 @@ def str_is_empty(arg) -> bool:
     if arg is None:
         return True
 
-    assert type(arg) == str
+    assert isinstance(arg, (str, bytes))
     return len(arg) == 0
 
 
