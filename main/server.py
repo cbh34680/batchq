@@ -107,7 +107,7 @@ async def prepare_files(memory:batchq.Memory):
         if platform.system() == 'Linux':
 
             other_pid = await memory.helper.path_read('batchq', 'pid-save')
-            if other_pid is not None:
+            if other_pid is not None and len(other_pid):
                 if os.path.isdir(f'/proc/{other_pid}'):
                     raise AlreadyRunningError(f'already exists other process pid={other_pid}')
 

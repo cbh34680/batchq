@@ -1,9 +1,13 @@
+from functools import WRAPPER_ASSIGNMENTS
 import typing
 import logging
 import json
 import collections
 import sys
+import os
 import asyncio
+import asyncio.streams
+import aiofiles
 
 from .. import *
 from ..utils import *
@@ -267,6 +271,55 @@ async def handle_world_end(taskid:int, peername, worker:typing.Dict, exec_params
     return None
 
 
+class PipeStream():
+
+    def __init__(self, path):
+
+        rpipe, wpipe = os.pipe()
+        reader = asyncio.StreamReader()
+        protocol = asyncio.StreamReaderProtocol(reader)
+
+        self.path = path
+        self.rpipe = rpipe
+        self.wpipe = wpipe
+        self.reader = reader
+        self.protocol = protocol
+
+    async def __aenter__(self):
+
+        loop = asyncio.get_running_loop()
+
+        rfd = os.fdopen(self.rpipe, mode='r')
+        transport, protocol = await loop.connect_read_pipe(lambda: self.protocol, rfd)
+
+        self.rfd = rfd
+        self.transport = transport
+        self.protocol = protocol
+
+        return self
+
+    async def close(self):
+
+        self.transport.close()
+
+        if self.path is not None:
+
+            async with await path_open(self.path) as f:
+                while True:
+                    line = await self.reader.readline()
+                    if len(line) == 0:
+                        break
+                    await f.write(line.decode('utf-8'))
+
+        os.close(self.wpipe)
+        #os.close(self.rpipe) --> OSError: errno=9 'Bad Descriptor'
+        self.rfd.close()
+
+    async def __aexit__(self, *args, **kwargs):
+        await self.close()
+        return False
+
+
 async def handle_subproc(taskid:int, peername, worker:typing.Dict, exec_params:typing.Dict):
 
     logger.debug(f'handle_subproc:{taskid}) {peername} {exec_params}')
@@ -291,48 +344,49 @@ async def handle_subproc(taskid:int, peername, worker:typing.Dict, exec_params:t
         args += exec_params['args']
         args = [ str(v) for v in args if v is not None ]
 
+        path_params = { 'task;taskid': taskid, }
+        paths = { k: path_expand_placeholder(worker[k], path_params=path_params) if k in worker else None for k in ('cwd', 'stdout', 'stderr', ) }
+
+        stdout = paths.get('stdout')
+        stderr = paths.get('stderr')
+
         static_env = {
             'BQ_WORKER_KEY': worker_key,
             'BQ_CLIENT': peername[0],
             'BQ_SESSION': exec_params.get('job'),
             'BQ_TASKNO': taskid,
+            'BQ_STDOUT': paths.get('stdout'),
+            'BQ_STDERR': paths.get('stderr'),
         }
+
+        if stdout:
+            static_env['BQ_STDOUT'] = stdout
+        if stderr:
+            static_env['BQ_STDERR'] = stderr
 
         env = dict_deep_merge(exec_params['kwargs'], static_env)
         env = { k: expand_placeholder(str(v)) for k, v in env.items() if v is not None }
 
-        path_params = { 'task;taskid': taskid, }
-        paths = { k: path_expand_placeholder(worker[k], path_params=path_params) if k in worker else None for k in ('cwd', 'stdout', 'stderr', ) }
+        async with PipeStream(stdout) as stdout, PipeStream(stderr) as stderr:
 
-        conf = {
-            'stdout': asyncio.subprocess.PIPE,
-            'stderr': asyncio.subprocess.PIPE,
-            'env': env,
-            'cwd': paths.get('cwd'),
-        }
+            conf = {
+                'stdout': stdout.wpipe,
+                'stderr': stderr.wpipe,
+                'env': env,
+                'cwd': paths.get('cwd'),
+            }
 
-        start_ts = current_timestamp()
-        proc = await asyncio.create_subprocess_exec(*args, **conf)
-        logger.debug(f'{taskid}) subprocess start pid={proc.pid}\nargs={args}')
-        logger.trace(f'{taskid}) conf={conf}')
+            start_ts = current_timestamp()
+            proc = await asyncio.create_subprocess_exec(*args, **conf)
+            logger.debug(f'{taskid}) subprocess start pid={proc.pid}\nargs={args}')
+            logger.trace(f'{taskid}) conf={conf}')
 
-        outs = await proc.communicate()
-        elapsed = current_timestamp() - start_ts
-        returncode = proc.returncode
-        pid = proc.pid
+            outs = await proc.communicate()
+            elapsed = current_timestamp() - start_ts
+            returncode = proc.returncode
+            pid = proc.pid
 
         logger.debug(f'{taskid}) subprocess end pid={pid} rc={returncode} elapsed={elapsed}')
-
-        for i, out_name in enumerate(('stdout', 'stderr', )):
-            path = paths.get(out_name)
-
-            if path is None:
-                logger.debug(f'{taskid}) name={out_name} no-file')
-
-            else:
-                logger.trace(f'{taskid}) write name={out_name} file={path}')
-
-                await path_write(path, outs[i].decode('utf-8'))
 
     except OSError as e:
         logger.warning(f'{taskid}) err={e.errno} {e.strerror}')

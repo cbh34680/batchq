@@ -36,6 +36,7 @@ __all__ = [
     'async_shutil_rmtree',
     're_create_directory',
     'path_read',
+    'path_open',
     'path_write',
     'peername_str2tuple',
     'cmp_hostinfo',
@@ -89,7 +90,7 @@ def sys_exit(arg, **kwargs) -> typing.NoReturn:
 
     sys.exit(1)
 
-_FORMAT_ENV = { f'env;{k}': v for k, v in os.environ.items() }
+#_FORMAT_ENV = { f'env;{k}': v for k, v in os.environ.items() }
 _FORMAT_APP = {
     f'app;pid': os.getpid(),
 }
@@ -97,7 +98,12 @@ _FORMAT_APP = {
 def expand_placeholder(arg):
 
     dt = local_datetime()
-    return dt.strftime(arg.format(**_FORMAT_APP, **_FORMAT_ENV))
+
+    path = os.path.expanduser(arg)
+    path = os.path.expandvars(path)
+    path = dt.strftime(path.format(**_FORMAT_APP))
+
+    return path
 
 def path_expand_placeholder(arg, *, path_params=None):
 
@@ -106,14 +112,17 @@ def path_expand_placeholder(arg, *, path_params=None):
     if path_params is None:
         path_params = {}
 
-    return dt.strftime(arg.format(**_FORMAT_APP, **_FORMAT_ENV, **path_params))
+    path = os.path.expanduser(arg)
+    path = os.path.expandvars(path)
+    path = dt.strftime(path.format(**_FORMAT_APP, **path_params))
+
+    return path
 
 def _json_dumps_default(obj):
 
     if isinstance(obj, collections.Mapping):
         return dict(obj)
 
-    #
     obj_type = type(obj)
 
     if obj_type == datetime.datetime:
@@ -178,6 +187,7 @@ async def path_read(path, *, defval=None):
     else:
         return value.strip()
 
+'''
 async def path_write(path, value, *, mode='w'):
 
     path_dir = os.path.dirname(path)
@@ -191,6 +201,30 @@ async def path_write(path, value, *, mode='w'):
         wb = await f.write(value)
 
         return wb, path
+'''
+async def path_open(path, *, mode='w'):
+
+    path_dir = os.path.dirname(path)
+    isdir = await async_os_path_isdir(path_dir)
+
+    if not isdir:
+        logger.trace(f'{path_dir}: make dir')
+        await async_os_makedirs(path_dir, mode=0o700, exist_ok=True)
+
+    return aiofiles.open(path, mode=mode)
+
+
+async def path_write(path, value, *, mode='w'):
+
+    #async with aiofiles.open(path, mode=mode) as f:
+    #    wb = await f.write(value)
+    #    return wb, path
+
+    async with await path_open(path, mode=mode) as f:
+        wb = await f.write(value)
+        return wb, path
+
+
 
 def peername_str2tuple(arg:str):
 
@@ -279,6 +313,7 @@ def iscoroutinefunction_or_partial(object):
 
     while isinstance(object, functools.partial):
         object = object.func
+
     return asyncio.iscoroutinefunction(object)
 
 #
