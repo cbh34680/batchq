@@ -25,7 +25,7 @@ async def process_line(lineno, line, evno, event_name):
 
     memory.helper.stats_incr(__name__, 'read')
 
-    if len(line) > 0:
+    if not str_is_empty(line):
         try:
             textutil.text2request(line)
 

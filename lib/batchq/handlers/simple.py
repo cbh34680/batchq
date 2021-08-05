@@ -305,10 +305,12 @@ class PipeStream():
         if self.path is not None:
 
             async with await path_open(self.path) as f:
+
                 while True:
                     line = await self.reader.readline()
-                    if len(line) == 0:
+                    if str_is_empty(line):
                         break
+
                     await f.write(line.decode('utf-8'))
 
         os.close(self.wpipe)

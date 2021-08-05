@@ -25,6 +25,7 @@ __all__ = [
     'utc_datetime',
     'current_timestamp',
     'here',
+    'str_is_empty',
     'sys_exit',
     'expand_placeholder',
     'path_expand_placeholder',
@@ -72,6 +73,16 @@ def here():
     info = inspect.getframeinfo(frame0)
 
     return os.path.basename(info.filename), info.lineno, info.function
+
+def str_is_empty(arg) -> bool:
+
+    assert type(arg) == str
+
+    if arg is None:
+        return True
+
+    return len(arg) == 0
+
 
 def sys_exit(arg, **kwargs) -> typing.NoReturn:
 
