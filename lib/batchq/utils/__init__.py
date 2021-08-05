@@ -76,11 +76,10 @@ def here():
 
 def str_is_empty(arg) -> bool:
 
-    assert type(arg) == str
-
     if arg is None:
         return True
 
+    assert type(arg) == str
     return len(arg) == 0
 
 
