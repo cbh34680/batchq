@@ -105,7 +105,7 @@ def gen_worker():
             'when': 'immediate',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_dump_memory',
@@ -124,7 +124,7 @@ def gen_worker():
             'when': 'immediate',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_list_jobs',
@@ -143,10 +143,48 @@ def gen_worker():
             'when': 'immediate',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_show_job',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'pause': {
+            # [option default='later']
+            'when': 'immediate',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.internal',
+
+            # [option default='handle_any']
+            'handler': 'handle_pause',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'resume': {
+            # [option default='later']
+            'when': 'immediate',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.internal',
+
+            # [option default='handle_any']
+            'handler': 'handle_pause',
 
             # [option default=True]
             'increment-running': False,
@@ -162,7 +200,7 @@ def gen_worker():
             #'when': 'later',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_be_master',
@@ -181,7 +219,7 @@ def gen_worker():
             #'when': 'later',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_change_master',
@@ -200,7 +238,7 @@ def gen_worker():
             #'when': 'later',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_report',
@@ -219,7 +257,7 @@ def gen_worker():
             #'when': 'later',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_ping',
@@ -238,7 +276,7 @@ def gen_worker():
             #'when': 'later',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_pong',
@@ -257,7 +295,7 @@ def gen_worker():
             #'when': 'later',
 
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
             'handler': 'handle_world_end',
@@ -296,8 +334,24 @@ def gen_worker():
 
             # [option]
             'cwd': '${BQ_APP_WORK}/app-example/app1',
-            'stdout': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.out',
-            'stderr': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.err',
+
+            # [option]
+            'stdout': {
+                # [option]
+                'adapter': 'file',
+
+                # [need if 'file']
+                'target': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.out',
+            },
+
+            # [option]
+            'stderr': {
+                # [option]
+                'adapter': 'file',
+
+                # [need if 'file']
+                'target': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.err',
+            },
 
             # [auto]
             'exec-params': {

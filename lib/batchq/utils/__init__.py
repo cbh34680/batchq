@@ -82,7 +82,6 @@ def str_is_empty(arg) -> bool:
     assert isinstance(arg, (str, bytes))
     return len(arg) == 0
 
-
 def sys_exit(arg, **kwargs) -> typing.NoReturn:
 
     print(f'\n!!!\n!!! stack [arg={arg}]\n!!!', file=sys.stderr)
@@ -107,6 +106,9 @@ _FORMAT_APP = {
 
 def expand_placeholder(arg):
 
+    if arg is None:
+        return None
+
     dt = local_datetime()
 
     path = os.path.expanduser(arg)
@@ -116,6 +118,9 @@ def expand_placeholder(arg):
     return path
 
 def path_expand_placeholder(arg, *, path_params=None):
+
+    if arg is None:
+        return None
 
     dt = local_datetime()
 
