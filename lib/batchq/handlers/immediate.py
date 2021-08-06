@@ -3,7 +3,6 @@ import logging
 import json
 import collections
 import sys
-import asyncio.streams
 
 from .. import *
 from ..utils import *

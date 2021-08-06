@@ -195,44 +195,6 @@ def gen_worker():
                 'send-report': False,
             },
         },
-        'be-master': {
-            # [option default='later']
-            #'when': 'later',
-
-            # [option default='batchq.handlers.simple']
-            'module': 'batchq.handlers.internal',
-
-            # [option default='handle_any']
-            'handler': 'handle_be_master',
-
-            # [option default=True]
-            'increment-running': False,
-
-            # [auto]
-            'exec-params': {
-                # [option default=True]
-                'send-report': False,
-            },
-        },
-        'change-master': {
-            # [option default='later']
-            #'when': 'later',
-
-            # [option default='batchq.handlers.simple']
-            'module': 'batchq.handlers.internal',
-
-            # [option default='handle_any']
-            'handler': 'handle_change_master',
-
-            # [option default=True]
-            'increment-running': False,
-
-            # [auto]
-            'exec-params': {
-                # [option default=True]
-                'send-report': False,
-            },
-        },
         'report': {
             # [option default='later']
             #'when': 'later',
@@ -290,12 +252,50 @@ def gen_worker():
                 'send-report': False,
             },
         },
+        'be-master': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_be_master',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'change-master': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_change_master',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
         'world-end': {
             # [option default='later']
             #'when': 'later',
 
             # [option default='batchq.handlers.simple']
-            'module': 'batchq.handlers.internal',
+            'module': 'batchq.handlers.delay',
 
             # [option default='handle_any']
             'handler': 'handle_world_end',
