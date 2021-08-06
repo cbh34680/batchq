@@ -5,6 +5,7 @@ import typing
 import functools
 import logging
 import os.path
+import collections
 
 from . import *
 from .utils import *
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 memory = get_memory()
 
 
-async def put_valid_to_queue(queue:asyncio.Queue):
+async def put_files_to_queue(queue:asyncio.Queue):
 
     path_params = { 'task;filename-suffix': 'dummy', }
     dummy_path = memory.get_path('batchq.splitter', 'valid', path_params=path_params)
@@ -55,16 +56,19 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
     logger.trace(f'hosts={hosts}')
 
     pos = 0
-    limit = len(requests)
+    len_request = len(requests)
 
     for host in hosts:
-        if pos >= limit:
+        if pos >= len_request:
             break
 
         softlimit = host['softlimit']
 
+        end = pos + min(10, softlimit)
+        logger.debug(f'pos={pos} end={end} softlimit={softlimit}')
+
         lines = []
-        host_requests = requests[pos: pos+softlimit]
+        host_requests = requests[pos: end]
 
         if not host_requests:
             break
@@ -72,20 +76,16 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
         for request in host_requests:
             try:
                 async with aiofiles.open(request['path'], mode='r') as fr:
-                    num_lines = 0
                     async for line in fr:
                         lines.append(line.strip())
-                        num_lines += 1
-                    assert num_lines == 1
+
+                        # one record only
+                        break
 
             except FileNotFoundError as e:
                 logger.warning(f'catch {type(e)} exception={e}, ignore')
 
-        ll = len(lines)
-        assert ll <= softlimit
-        assert ll <= len(host_requests)
-
-        if ll > 0:
+        if lines:
             try:
                 peername = host['peername']
                 host['request-ts'] = current_timestamp()
@@ -98,11 +98,11 @@ async def query_each_requests(requests:typing.List, hosts:typing.List):
                     yield host, request, response
 
             except Exception as e:
-                logger.error(f'catch exception={type(e)}: {e}')
+                logger.warning(f'catch exception={type(e)}: {e}')
 
-        pos += softlimit
+        pos += len(host_requests)
 
-    if pos < limit:
+    if pos < len_request:
         for request in requests[pos:]:
             yield None, request, None
 
@@ -153,8 +153,10 @@ async def flush_requests(requests:typing.List, hosts:typing.List):
             path_params = { 'task;filename': filename, }
             await memory.helper.path_rename(__name__, rename_key, orig=orig, path_params=path_params)
 
-    return retry_high + retry_low
+    return retry_high, retry_low
 
+
+NextTimeouts = collections.namedtuple('NextTimeouts', ['new_record', 'exist_high', 'exist_low', 'not_decr', 'no_hosts'])
 
 async def _main():
 
@@ -162,10 +164,11 @@ async def _main():
 
     queue = memory.get_queue(__name__)
 
-    num_put = await put_valid_to_queue(queue)
+    num_put = await put_files_to_queue(queue)
     logger.info(f'put {num_put} message to queue')
 
-    #await asyncio.sleep(5)
+    TIMEOUTS = NextTimeouts(**{ k:v for k, v in zip(NextTimeouts._fields, memory.get_const(__name__, 'next-timeouts')) })
+    logger.info(f'TIMEOUTS={TIMEOUTS}')
 
     timeout = None
     timeout_query = lambda: timeout
@@ -185,7 +188,8 @@ async def _main():
                     prev_len = len(requests)
 
                     logger.trace(f'{i}) before request={len(requests)}')
-                    requests = await flush_requests(requests, hosts)
+                    retry_high, retry_low = await flush_requests(requests, hosts)
+                    requests = retry_high + retry_low
                     logger.trace(f'{i}) after request={len(requests)}')
 
                     post_len = len(requests)
@@ -193,19 +197,23 @@ async def _main():
                     incr_key = 'flush'
 
                     if requests:
-                        timeout = 20.0 if prev_len == post_len else 10.0
+                        #timeout = 20.0 if prev_len == post_len else 10.0
+
+                        if retry_high:
+                            timeout = TIMEOUTS.exist_high
+
+                        else:
+                            timeout = TIMEOUTS.not_decr if prev_len == post_len else TIMEOUTS.exist_low
 
                 else:
                     logger.warning(f'{i}) hosts is empty, remaining={len(requests)}')
 
                     incr_key = 'no-hosts'
-                    timeout = 30.0
+                    timeout = TIMEOUTS.no_hosts
 
             else:
                 incr_key = '********** no-works **********'
-
                 logger.error(f'{i}) ********** no-works **********')
-
                 assert False
 
         else:
@@ -215,7 +223,7 @@ async def _main():
             requests.append(message)
 
             incr_key = 'append'
-            timeout = 1.0
+            timeout = TIMEOUTS.new_record
 
         memory.helper.stats_incr(__name__, incr_key)
 
@@ -249,7 +257,7 @@ class _MyTaskFactory(TaskFactory):
 
     async def canceller(self):
 
-        await memory.get_event(__package__, 'world-end').wait()
+        await memory.get_event(__package__, 'local-end').wait()
 
         logger.trace('fired canceller')
 

@@ -18,9 +18,12 @@ import traceback
 import deepmerge
 import copy
 import time
+import distutils
 
 
 __all__ = [
+    'str_is_empty',
+    'str2bool',
     'local_datetime',
     'utc_datetime',
     'current_timestamp',
@@ -36,6 +39,7 @@ __all__ = [
     'async_shutil_rmtree',
     're_create_directory',
     'path_read',
+    'path_open',
     'path_write',
     'peername_str2tuple',
     'cmp_hostinfo',
@@ -55,7 +59,17 @@ _MERGER = deepmerge.Merger([
 )
 
 
-def local_datetime(utc=False):
+def str_is_empty(arg) -> bool:
+
+    if arg is None:
+        return True
+
+    assert isinstance(arg, (str, bytes))
+    return len(arg) == 0
+
+str2bool = lambda x: False if str_is_empty(x) else bool(distutils.util.strtobool(x))
+
+def local_datetime():
     return datetime.datetime.now()
 
 def utc_datetime():
@@ -89,31 +103,45 @@ def sys_exit(arg, **kwargs) -> typing.NoReturn:
 
     sys.exit(1)
 
-_FORMAT_ENV = { f'env;{k}': v for k, v in os.environ.items() }
+#_FORMAT_ENV = { f'env;{k}': v for k, v in os.environ.items() }
 _FORMAT_APP = {
     f'app;pid': os.getpid(),
 }
 
 def expand_placeholder(arg):
 
+    if arg is None:
+        return None
+
     dt = local_datetime()
-    return dt.strftime(arg.format(**_FORMAT_APP, **_FORMAT_ENV))
+
+    path = os.path.expanduser(arg)
+    path = os.path.expandvars(path)
+    path = dt.strftime(path.format(**_FORMAT_APP))
+
+    return path
 
 def path_expand_placeholder(arg, *, path_params=None):
+
+    if arg is None:
+        return None
 
     dt = local_datetime()
 
     if path_params is None:
         path_params = {}
 
-    return dt.strftime(arg.format(**_FORMAT_APP, **_FORMAT_ENV, **path_params))
+    path = os.path.expanduser(arg)
+    path = os.path.expandvars(path)
+    path = dt.strftime(path.format(**_FORMAT_APP, **path_params))
+
+    return path
 
 def _json_dumps_default(obj):
 
     if isinstance(obj, collections.Mapping):
         return dict(obj)
 
-    #
     obj_type = type(obj)
 
     if obj_type == datetime.datetime:
@@ -178,7 +206,8 @@ async def path_read(path, *, defval=None):
     else:
         return value.strip()
 
-async def path_write(path, value, *, mode='w'):
+
+async def path_open(path, *, mode='w'):
 
     path_dir = os.path.dirname(path)
     isdir = await async_os_path_isdir(path_dir)
@@ -187,10 +216,20 @@ async def path_write(path, value, *, mode='w'):
         logger.trace(f'{path_dir}: make dir')
         await async_os_makedirs(path_dir, mode=0o700, exist_ok=True)
 
-    async with aiofiles.open(path, mode=mode) as f:
-        wb = await f.write(value)
+    return aiofiles.open(path, mode=mode)
 
+
+async def path_write(path, value, *, mode='w'):
+
+    #async with aiofiles.open(path, mode=mode) as f:
+    #    wb = await f.write(value)
+    #    return wb, path
+
+    async with await path_open(path, mode=mode) as f:
+        wb = await f.write(str(value))
         return wb, path
+
+
 
 def peername_str2tuple(arg:str):
 
@@ -279,6 +318,7 @@ def iscoroutinefunction_or_partial(object):
 
     while isinstance(object, functools.partial):
         object = object.func
+
     return asyncio.iscoroutinefunction(object)
 
 #

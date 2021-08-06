@@ -32,7 +32,7 @@ async def on_client_connected(reader:asyncio.StreamReader, writer:asyncio.Stream
                     request = textutil.text2request(line)
 
                 except Exception as e:
-                    logger.error(f'catch exception={type(e)}: {e}')
+                    logger.warning(f'catch exception={type(e)}: {e}')
 
                     response = {
                         'code': 400,
@@ -55,7 +55,7 @@ async def on_client_connected(reader:asyncio.StreamReader, writer:asyncio.Stream
         logger.debug(f'done')
 
     except Exception as e:
-        logger.error(f'exception={type(e)}: {e}')
+        logger.warning(f'exception={type(e)}: {e}')
 
     finally:
 
@@ -108,7 +108,7 @@ class _MyTaskFactory(TaskFactory):
 
     async def canceller(self):
 
-        await memory.get_event(__package__, 'world-end').wait()
+        await memory.get_event(__package__, 'local-end').wait()
 
         logger.trace('fired canceller')
 

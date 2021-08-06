@@ -55,7 +55,7 @@ async def _main():
                 await memory.helper.path_append_tsvln(__name__, 'sent', message)
 
         except Exception as e:
-            logger.error(f'peername={peername} exception={type(e)}: {e}')
+            logger.warning(f'peername={peername} exception={type(e)}: {e}')
 
         else:
             err = False
@@ -91,7 +91,7 @@ class _MyTaskFactory(TaskFactory):
             await _main()
 
         except asyncio.CancelledError:
-            sys_exit(f'catch cancel')
+            logger.error(f'catch cancel')
 
         except Exception as e:
             sys_exit(f'catch {type(e)} exception={e}')

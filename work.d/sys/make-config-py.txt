@@ -9,7 +9,7 @@ def gen_config():
 
     ret = {
         'meta': {
-            'version': '1.0.0',
+            'version': '1.0.1',
             'description': '',
         },
         'const': {
@@ -31,62 +31,66 @@ def gen_config():
             'batchq.netlistener': {
                 'listen-port': 9999,
             },
+            'batchq.producer': {
+                'next-timeouts': (1.0, 5.0, 10.0, 20.0, 30.0),
+            },
         },
         'path': {
             'batchq': {
-                'worker-config': '{env;BQ_APP_WORK}/sys/var/etc/worker.json',
-                'log-file': '{env;BQ_APP_WORK}/sys/var/log/debug/system.log',
-                'pid-save': '{env;BQ_APP_WORK}/sys/var/run/batchq.pid',
-                'last-shutdown': '{env;BQ_APP_WORK}/sys/var/run/last-shutdown.txt',
-                'last-memory': '{env;BQ_APP_WORK}/sys/var/run/last-memory.txt',
+                'worker-config': '${BQ_APP_WORK}/sys/var/etc/worker.json',
+                'log-file': '${BQ_APP_WORK}/sys/var/log/debug/system.log',
+                'pid-save': '${BQ_APP_WORK}/sys/var/run/batchq.pid',
+                'last-shutdown': '${BQ_APP_WORK}/sys/var/run/last-shutdown.txt',
+                'last-memory': '${BQ_APP_WORK}/sys/var/run/last-memory.txt',
                 'loadavg': '/proc/loadavg',
             },
             'batchq.utils.strmutil': {
-                'log-file': '{env;BQ_APP_WORK}/sys/var/log/debug/strmutil.log',
+                'log-file': '${BQ_APP_WORK}/sys/var/log/debug/strmutil.log',
             },
             'batchq.utils.queutil': {
-                'log-file': '{env;BQ_APP_WORK}/sys/var/log/debug/queutil.log',
+                'log-file': '${BQ_APP_WORK}/sys/var/log/debug/queutil.log',
             },
             'batchq.utils.inoutil': {
-                'log-file': '{env;BQ_APP_WORK}/sys/var/log/debug/inoutil.log',
+                'log-file': '${BQ_APP_WORK}/sys/var/log/debug/inoutil.log',
             },
             'batchq.utils.jobutil': {
-                'history': '{env;BQ_APP_WORK}/sys/var/data/job/history.lst',
-                'request': '{env;BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/request.txt',
-                'execute': '{env;BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/execute.txt',
-                'result': '{env;BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/result.txt',
-                'response': '{env;BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/response.txt',
+                'history': '${BQ_APP_WORK}/sys/var/data/job/history.lst',
+                'request': '${BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/request.txt',
+                'execute': '${BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/execute.txt',
+                'result': '${BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/result.txt',
+                'response': '${BQ_APP_WORK}/sys/var/data/job/{task;job-subdir}/response.txt',
             },
             'batchq.pipelistener': {
-                'socket': '{env;BQ_APP_WORK}/sys/var/run/batchq.sock',
-                'output': '{env;BQ_APP_WORK}/sys/var/tmp/splitter/%d%H%M%S-{app;pid}.txt',
+                'socket': '${BQ_APP_WORK}/sys/var/run/batchq.sock',
+                'output': '${BQ_APP_WORK}/sys/var/tmp/splitter/%d%H%M%S-{app;pid}.txt',
             },
             'batchq.splitter': {
-                'watchdir': '{env;BQ_APP_WORK}/sys/var/tmp/splitter',
-                'valid': '{env;BQ_APP_WORK}/sys/var/data/valid/%d%H-{app;pid}-{task;filename-suffix}',
-                'invalid': '{env;BQ_APP_WORK}/sys/var/data/invalid/%y/%m%d/%H/{app;pid}-{task;filename-suffix}',
+                'watchdir': '${BQ_APP_WORK}/sys/var/tmp/splitter',
+                'valid': '${BQ_APP_WORK}/sys/var/data/valid/%d%H-{app;pid}-{task;filename-suffix}',
+                'invalid': '${BQ_APP_WORK}/sys/var/data/invalid/%y/%m%d/%H/{app;pid}-{task;filename-suffix}',
             },
             'batchq.loader': {
-                'watchdir': '{env;BQ_APP_WORK}/sys/var/etc',
+                'watchdir': '${BQ_APP_WORK}/sys/var/etc',
             },
             'batchq.netlistener': {
-                'busy-threshold': '{env;BQ_APP_WORK}/sys/var/etc/busy-threshold.val',
-                'accept': '{env;BQ_APP_WORK}/sys/var/log/accept/%y/%m%d/%H.log',
-                'proceed': '{env;BQ_APP_WORK}/sys/var/log/proceed/%y/%m%d/%H.log',
-                'reject': '{env;BQ_APP_WORK}/sys/var/log/reject/%y/%m%d/%H.log',
+                'busy-threshold': '${BQ_APP_WORK}/sys/var/etc/busy-threshold.val',
+                'accept': '${BQ_APP_WORK}/sys/var/log/accept/%y/%m%d/%H.log',
+                'proceed': '${BQ_APP_WORK}/sys/var/log/proceed/%y/%m%d/%H.log',
+                'reject': '${BQ_APP_WORK}/sys/var/log/reject/%y/%m%d/%H.log',
             },
             'batchq.producer': {
-                'sent': '{env;BQ_APP_WORK}/sys/var/data/sent/%y/%m%d/%H/{task;filename}',
-                'guveup': '{env;BQ_APP_WORK}/sys/var/data/giveup/%y/%m%d/%H/{task;filename}',
-                'impossible': '{env;BQ_APP_WORK}/sys/var/data/impossible/%y/%m%d/%H/{task;filename}',
+                'sent': '${BQ_APP_WORK}/sys/var/data/sent/%y/%m%d/%H/{task;filename}',
+                'guveup': '${BQ_APP_WORK}/sys/var/data/giveup/%y/%m%d/%H/{task;filename}',
+                'impossible': '${BQ_APP_WORK}/sys/var/data/impossible/%y/%m%d/%H/{task;filename}',
             },
             'batchq.consumer': {
-                'softlimit': '{env;BQ_APP_WORK}/sys/var/etc/softlimit.val',
-                'master-host': '{env;BQ_APP_WORK}/sys/var/etc/master-host.val',
+                'softlimit': '${BQ_APP_WORK}/sys/var/etc/softlimit.val',
+                'master-host': '${BQ_APP_WORK}/sys/var/etc/master-host.val',
+                'pause': '${BQ_APP_WORK}/sys/var/etc/pause.val',
             },
             'batchq.postman': {
-                'sent': '{env;BQ_APP_WORK}/sys/var/log/sent/%y/%m%d/%H.log',
-                'guveup': '{env;BQ_APP_WORK}/sys/var/log/guveup/%y/%m%d/%H.log',
+                'sent': '${BQ_APP_WORK}/sys/var/log/sent/%y/%m%d/%H.log',
+                'guveup': '${BQ_APP_WORK}/sys/var/log/guveup/%y/%m%d/%H.log',
             },
         },
         'worker': {},
@@ -101,14 +105,11 @@ def gen_worker():
             # [option default='later']
             'when': 'immediate',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.immediate',
 
             # [option default='handle_any']
-            'function': 'handle_dump_memory',
+            'handler': 'handle_dump_memory',
 
             # [option default=True]
             'increment-running': False,
@@ -123,14 +124,11 @@ def gen_worker():
             # [option default='later']
             'when': 'immediate',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.immediate',
 
             # [option default='handle_any']
-            'function': 'handle_list_jobs',
+            'handler': 'handle_list_jobs',
 
             # [option default=True]
             'increment-running': False,
@@ -145,58 +143,11 @@ def gen_worker():
             # [option default='later']
             'when': 'immediate',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.immediate',
 
             # [option default='handle_any']
-            'function': 'handle_show_job',
-
-            # [option default=True]
-            'increment-running': False,
-
-            # [auto]
-            'exec-params': {
-                # [option default=True]
-                'send-report': False,
-            },
-        },
-        'be-master': {
-            # [option default='later']
-            'when': 'immediate',
-
-            # [option default='subproc']
-            'type': 'module',
-
-            # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
-
-            # [option default='handle_any']
-            'function': 'handle_be_master',
-
-            # [option default=True]
-            'increment-running': False,
-
-            # [auto]
-            'exec-params': {
-                # [option default=True]
-                'send-report': False,
-            },
-        },
-        'change-master': {
-            # [option default='later']
-            'when': 'immediate',
-
-            # [option default='subproc']
-            'type': 'module',
-
-            # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
-
-            # [option default='handle_any']
-            'function': 'handle_change_master',
+            'handler': 'handle_show_job',
 
             # [option default=True]
             'increment-running': False,
@@ -211,14 +162,11 @@ def gen_worker():
             # [option default='later']
             #'when': 'later',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
-            'function': 'handle_report',
+            'handler': 'handle_report',
 
             # [option default=True]
             'increment-running': False,
@@ -233,14 +181,11 @@ def gen_worker():
             # [option default='later']
             #'when': 'later',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
-            'function': 'handle_ping',
+            'handler': 'handle_ping',
 
             # [option default=True]
             'increment-running': False,
@@ -255,14 +200,125 @@ def gen_worker():
             # [option default='later']
             #'when': 'later',
 
-            # [option default='subproc']
-            'type': 'module',
-
             # [option default='batchq.handlers.simple']
-            #'module': 'batchq.handlers.simple',
+            'module': 'batchq.handlers.internal',
 
             # [option default='handle_any']
-            'function': 'handle_pong',
+            'handler': 'handle_pong',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'be-master': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_be_master',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'change-master': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_change_master',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'pause': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_pause',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'resume': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_resume',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'world-end': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_world_end',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'local-end': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_local_end',
 
             # [option default=True]
             'increment-running': False,
@@ -274,16 +330,44 @@ def gen_worker():
             },
         },
         'app1': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            #'module': 'batchq.handlers.simple',
+
+            # [option default='handle_any']
+            'handler': 'handle_subproc',
+
+            # [option default=True]
+            #'increment-running': True,
+
             # [option]
             'execbin': '/bin/bash',
 
             # [need if 'subproc']
-            'program': '{env;BQ_APP_WORK}/app-example/app1/run.sh',
+            'program': '${BQ_APP_WORK}/app-example/app1/run.sh',
 
             # [option]
-            'cwd': '{env;BQ_APP_WORK}/app-example/app1',
-            'stdout': '{env;BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskno}.out',
-            'stderr': '{env;BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskno}.err',
+            'cwd': '${BQ_APP_WORK}/app-example/app1',
+
+            # [option]
+            'stdout': {
+                # [option]
+                'adapter': 'file',
+
+                # [need if 'file']
+                'path': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.out',
+            },
+
+            # [option]
+            'stderr': {
+                # [option]
+                'adapter': 'file',
+
+                # [need if 'file']
+                'path': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.err',
+            },
 
             # [auto]
             'exec-params': {
@@ -295,7 +379,7 @@ def gen_worker():
                 # [default={}, -> env]
                 'kwargs': {
                     'HELLO': 'WORLD',
-                    'PATH': '{env;PATH}'
+                    'PATH': '${PATH}'
                 },
                 # [option default=True]
                 #'send-report': True,

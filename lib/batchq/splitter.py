@@ -25,12 +25,12 @@ async def process_line(lineno, line, evno, event_name):
 
     memory.helper.stats_incr(__name__, 'read')
 
-    if len(line) > 0:
+    if not str_is_empty(line):
         try:
             textutil.text2request(line)
 
         except Exception as e:
-            logger.error(f'catch exception={type(e)}: {e}')
+            logger.warning(f'catch exception={type(e)}: {e}')
 
             path_key = 'invalid'
             filename_suffix = f'{evno}_{event_name}'
@@ -67,7 +67,7 @@ async def _main():
     event_ready = memory.get_event(__name__, 'ready')
 
     evno = 0
-    async for event in inoutil.receive_event_until_world_end(watchdir, mask, event_ready=event_ready):
+    async for event in inoutil.receive_event_until_local_end(watchdir, mask, event_ready=event_ready):
 
         memory.helper.stats_incr(__name__, 'event')
 

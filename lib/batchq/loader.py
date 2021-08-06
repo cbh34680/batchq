@@ -3,6 +3,7 @@ import functools
 import asyncinotify
 import logging
 import sys
+import distutils.util
 
 from . import *
 from .utils import *
@@ -49,6 +50,10 @@ async def _main():
                 'modify': functools.partial(memory.helper.load_path_val, converter=peername_str2tuple),
                 'delete': memory.unset_val,
             },
+            'pause': {
+                'modify': functools.partial(memory.helper.load_path_val, defval=False, converter=str2bool),
+                'delete': memory.unset_val,
+            },
         },
         'batchq.netlistener': {
             'busy-threshold': {
@@ -65,7 +70,7 @@ async def _main():
 
     await async_os_makedirs(watchdir, mode=0o700, exist_ok=True)
 
-    async for event in inoutil.receive_event_until_world_end(watchdir, mask):
+    async for event in inoutil.receive_event_until_local_end(watchdir, mask):
 
         logger.trace(event)
 

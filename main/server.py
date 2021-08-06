@@ -44,19 +44,7 @@ def unix_signal_handler(signum, signame):
 
     logger.info(f'receive signal={signum} signame={signame}')
 
-    loop = asyncio.get_running_loop()
-    loop.set_debug(True)
-
-    memory = batchq.get_memory()
-    memory.get_event('batchq', 'world-end').set()
-
-    for task in asyncio.all_tasks():
-        task_name = task.get_name()
-
-        if 'cancellable' in task_name:
-            if not task.done():
-                task.cancel()
-                logger.trace(f'send cancel to {task_name}')
+    batchq.local_end()
 
 
 async def start_tasks(memory:batchq.Memory):
@@ -76,14 +64,14 @@ async def start_tasks(memory:batchq.Memory):
     #factories, factories2 = itertools.tee(factories)
 
     for factory in factories:
-        mod_name = factory.__module__
+        module_name = factory.__module__
 
-        logger.trace(f'call {mod_name}.ainit()')
+        logger.trace(f'call {module_name}.ainit()')
         await factory.ainit()
 
-        memory.create_event(mod_name, 'ready')
-        memory.create_event(mod_name, 'end')
-        memory.create_queue(mod_name)
+        memory.create_event(module_name, 'ready')
+        memory.create_event(module_name, 'end')
+        memory.create_queue(module_name)
 
     logger.trace(f'create tasks')
     tasks = [ await factory.create_tasks() for factory in factories ]
@@ -119,7 +107,8 @@ async def prepare_files(memory:batchq.Memory):
         if platform.system() == 'Linux':
 
             other_pid = await memory.helper.path_read('batchq', 'pid-save')
-            if other_pid is not None:
+
+            if not batchq.str_is_empty(other_pid):
                 if os.path.isdir(f'/proc/{other_pid}'):
                     raise AlreadyRunningError(f'already exists other process pid={other_pid}')
 
@@ -133,13 +122,13 @@ async def prepare_files(memory:batchq.Memory):
         if create_pid_file:
             await memory.helper.path_remove('batchq', 'pid-save')
 
-            await memory.helper.path_println('batchq', 'last-shutdown', batchq.current_timestamp())
-            await memory.helper.path_println('batchq', 'last-memory', memory)
+            #await memory.helper.path_println('batchq', 'last-shutdown', batchq.current_timestamp())
+            #await memory.helper.path_println('batchq', 'last-memory', memory)
 
 
 async def aiomain(config:typing.Dict, loglevel):
     try:
-        world_end = asyncio.Event()
+        local_end = asyncio.Event()
 
         loop = asyncio.get_event_loop()
         loop.set_debug(logger.level <= logging.DEBUG)
@@ -153,7 +142,7 @@ async def aiomain(config:typing.Dict, loglevel):
             loop.add_signal_handler(signum, fpartial)
 
         logger.trace(f'library initialize')
-        memory = await batchq.init_library(config=config, world_end=world_end)
+        memory = await batchq.init_library(config=config, local_end=local_end)
 
         '''
         def dump_memory():

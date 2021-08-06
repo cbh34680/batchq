@@ -57,6 +57,12 @@ async def on_check_request(request, response):
 
     if worker['increment-running']:
 
+        if memory.get_val(__name__, 'pause'):
+            response['code'] = 503
+            response['reason'] = 'SERVER PAUSED'
+            response['retry-suggestion'] = 'POSSIBLE LATER'
+            return False
+
         softlimit = memory.get_val(__name__, 'softlimit')
         running = memory.get_val(__name__, 'running')
 
@@ -72,6 +78,10 @@ async def on_check_request(request, response):
 
 
 async def on_timer(num_times=0):
+
+    if memory.get_val(__name__, 'pause'):
+        logger.warning('paused, no send ping')
+        return
 
     peername = memory.get_val(__name__, 'master-host')
 
@@ -132,7 +142,7 @@ async def raii_set_end_event():
             memory.get_event(__name__, 'end').set()
 
 
-async def do_send_report(arg_message, type, exec_params, result):
+async def do_send_report(arg_message, exec_params, result):
 
     peeraddr = arg_message['peername'][0]
 
@@ -147,7 +157,6 @@ async def do_send_report(arg_message, type, exec_params, result):
             'exec-params': {
                 'kwargs': {
                     'worker-key': arg_message['request']['worker-key'],
-                    'type': type,
                     'exec-params': exec_params,
                     'result': result,
                 },
@@ -163,105 +172,15 @@ async def do_send_report(arg_message, type, exec_params, result):
     memory.helper.stats_incr(__name__, 'report')
 
 
-async def exec_subproc(taskno:int, message:typing.Dict, worker_key:str, worker:typing.Dict, exec_params:typing.Dict):
+async def _on_message(message:typing.Dict, taskid:int):
 
-    returncode = -1
-    proc = -1
-    paths = None
-
-    try:
-        execbin = worker.get('execbin')
-        if execbin is not None:
-            execbin = expand_placeholder(execbin)
-
-        args = [
-            execbin,
-            expand_placeholder(worker['program']),
-        ]
-
-        args += exec_params['args']
-        args = [ str(v) for v in args if v is not None ]
-
-        static_env = {
-            'BQ_WORKER_KEY': worker_key,
-            'BQ_CLIENT': message['peername'][0],
-            'BQ_SESSION': exec_params.get('job'),
-            'BQ_TASKNO': taskno,
-        }
-
-        env = dict_deep_merge(exec_params['kwargs'], static_env)
-        env = { k: expand_placeholder(str(v)) for k, v in env.items() if v is not None }
-
-        path_params = { 'task;taskno': taskno, }
-        paths = { k: path_expand_placeholder(worker[k], path_params=path_params) if k in worker else None for k in ('cwd', 'stdout', 'stderr', ) }
-
-        conf = {
-            'stdout': asyncio.subprocess.PIPE,
-            'stderr': asyncio.subprocess.PIPE,
-            'env': env,
-            'cwd': paths.get('cwd'),
-        }
-
-        start_ts = current_timestamp()
-        proc = await asyncio.create_subprocess_exec(*args, **conf)
-        logger.debug(f'{taskno}) subprocess start pid={proc.pid}\nargs={args}')
-        logger.trace(f'{taskno}) conf={conf}')
-
-        outs = await proc.communicate()
-        elapsed = current_timestamp() - start_ts
-        returncode = proc.returncode
-        pid = proc.pid
-
-        logger.debug(f'{taskno}) subprocess end pid={pid} rc={returncode} elapsed={elapsed}')
-
-        for i, out_name in enumerate(('stdout', 'stderr', )):
-            path = paths.get(out_name)
-
-            if path is None:
-                logger.debug(f'{taskno}) name={out_name} no-file')
-
-            else:
-                logger.trace(f'{taskno}) write name={out_name} file={path}')
-
-                await path_write(path, outs[i].decode('utf-8'))
-
-    except OSError as e:
-        logger.error(f'{taskno}) err={e.errno} {e.strerror}')
-
-        returncode = e.errno
-
-    retval = {
-        'returncode': returncode,
-        'pid': pid,
-        'paths' : paths,
-    }
-
-    return retval
-
-
-async def exec_module(taskno:int, message:typing.Dict, worker_key:str, worker:typing.Dict, exec_params:typing.Dict):
-
-    mod_name = worker['module']
-    func_name = worker['function']
-
-    module = importlib.import_module(mod_name)
-    func = getattr(module, func_name)
-
-    return await func(taskno, message['peername'], exec_params)
-
-
-async def _on_message(message:typing.Dict, taskno:int):
-
-    logger.debug(f'task={taskno} receive message={message}')
+    logger.debug(f'task={taskid} receive message={message}')
     assert message is not None
 
     memory.helper.stats_incr(__name__, 'event')
 
-    #request = copy.deepcopy(message['request'])
     request = message['request']
-
-    worker_key = request['worker-key']
-    worker = memory.get_worker(worker_key)
+    worker = memory.get_worker(request['worker-key'])
 
     start_dt = utc_datetime()
     start_ts = current_timestamp()
@@ -280,11 +199,14 @@ async def _on_message(message:typing.Dict, taskno:int):
         error = None
 
         try:
-            procby = 'exec_' + worker['type']
-            memory.helper.stats_incr(__name__, 'types', procby)
+            module_name = worker['module']
+            handler = worker['handler']
 
-            coro = globals()[procby]
-            retval = await coro(taskno, message, worker_key, worker, exec_params)
+            memory.helper.stats_incr(__name__, 'handler', f'{module_name}::{handler}')
+            module = importlib.import_module(module_name)
+            coro = getattr(module, handler)
+
+            retval = await coro(taskid, message['peername'], worker, exec_params)
 
         except Exception as e:
 
@@ -311,7 +233,7 @@ async def _on_message(message:typing.Dict, taskno:int):
             await jobutil.save_data('result', message['peername'], job, result)
 
         if exec_params['send-report']:
-            await do_send_report(message, worker['type'], exec_params, result)
+            await do_send_report(message, exec_params, result)
             memory.helper.stats_incr(__name__, "send-report")
 
         memory.helper.stats_incr(__name__, "success" if success else "error")
@@ -319,12 +241,12 @@ async def _on_message(message:typing.Dict, taskno:int):
         return result
 
 
-async def on_message(message:typing.Dict, taskno:int=0):
+async def on_message(message:typing.Dict, taskid:int=0):
 
     running = memory.get_val(__name__, 'running')
     logger.trace(f'before _on_message(): current running is {running}')
 
-    result = await _on_message(message, taskno)
+    result = await _on_message(message, taskid)
 
     running = memory.get_val(__name__, 'running')
     logger.trace(f'after _on_message(): current running is {running}')
@@ -355,13 +277,13 @@ async def on_exec_request(message, response):
     return False
 
 
-async def _main(taskno:int):
+async def _main(taskid:int):
 
     queue = memory.get_queue(__name__)
 
     async with raii_set_end_event():
         async for i, message in queutil.get_message_until_eom(queue, where=here()):
-            _ = await on_message(message, taskno)
+            _ = await on_message(message, taskid)
 
 
 class _MyTaskFactory(TaskFactory):
@@ -385,7 +307,7 @@ class _MyTaskFactory(TaskFactory):
 
         await memory.helper.load_path_val(__name__, 'softlimit', defval=self.num_tasks, converter=int)
 
-        fpartial = functools.partial(on_timer_helper, on_timer, devide=5, remainder=1)
+        fpartial = functools.partial(on_timer_helper, on_timer, devide=2, remainder=1)
         memory.append_callback_coro('batchq.regularly', 'on-timer', fpartial)
 
         try:
@@ -394,16 +316,22 @@ class _MyTaskFactory(TaskFactory):
         except ValueError:
             logger.warning('master-host: not defined')
 
+        try:
+            await memory.helper.load_path_val(__name__, 'pause', converter=str2bool)
+
+        except ValueError:
+            logger.debug('pause: not defined')
+
         logger.trace(f'append hook: softlimit: unset_val')
         hook = lambda: memory.set_val(__name__, 'softlimit', self.num_tasks)
         memory.append_val_hook(__name__, 'softlimit', 'unset_val', hook=hook)
 
-    async def main(self, taskno:int):
+    async def main(self, taskid:int):
         try:
-            await _main(taskno)
+            await _main(taskid)
 
         except asyncio.CancelledError:
-            sys_exit(f'catch cancel')
+            logger.error(f'catch cancel')
 
         except Exception as e:
             sys_exit(f'catch {type(e)} exception={e}')
@@ -431,10 +359,10 @@ class _MyTaskFactory(TaskFactory):
 
         for i in range(self.num_tasks):
 
-            taskno = i + 1
+            taskid = i + 1
 
-            name = f'{__name__}:main-task-{taskno}'
-            tasks.append(asyncio.create_task(self.main(taskno), name=name))
+            name = f'{__name__}:main-task-{taskid}'
+            tasks.append(asyncio.create_task(self.main(taskid), name=name))
             logger.trace(f'regist consumer name={name}')
 
         return tasks

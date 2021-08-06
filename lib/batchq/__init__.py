@@ -21,15 +21,15 @@ __all__ = [
     'init_library',
     'get_memory',
     'PropObject',
+    'local_end',
 ]
 
 logger = logging.getLogger(__name__)
 
 _EMPTY_WORKER = {
     'when': 'later',
-    'type': 'subproc',
     'module': 'batchq.handlers.simple',
-    'function': 'handle_any',
+    'handler': 'handle_any',
     'increment-running': True,
     'exec-params': {
         'args': [],
@@ -57,13 +57,13 @@ class NamedQueue(asyncio.Queue):
 
 
 class Memory():
-    def __init__(self, config:typing.Dict, world_end:asyncio.Event):
+    def __init__(self, config:typing.Dict, local_end:asyncio.Event):
 
         self.config = config
 
         self.events = {
             __package__: {
-                'world-end': world_end,
+                'local-end': local_end,
             },
         }
 
@@ -152,7 +152,7 @@ class Memory():
                         value = converter(value)
 
                     except ValueError as e:
-                        logger.error(f'catch {type(e)} exception={e}, set default({defval})')
+                        logger.warning(f'catch {type(e)} exception={e}, set default({defval})')
                         value = defval
 
                 if value is not None:
@@ -356,6 +356,7 @@ class Memory():
 
         worker = self.config['worker'][key]
         worker = dict_deep_merge(_EMPTY_WORKER, worker)
+        worker['key'] = key
 
         return worker
 
@@ -380,11 +381,11 @@ class Memory():
         await self.reload_workers()
 
 
-async def init_library(config:typing.Dict, world_end:asyncio.Event):
+async def init_library(config:typing.Dict, local_end:asyncio.Event):
 
     global _memory
 
-    _memory = Memory(config, world_end)
+    _memory = Memory(config, local_end)
     await _memory.ainit()
 
     return _memory
@@ -402,5 +403,26 @@ class PropObject(object):
     def __repr__(self):
 
         return str(self.__dict__)
+
+
+def local_end():
+
+    memory = get_memory()
+    memory.get_event('batchq', 'local-end').set()
+
+    loop = asyncio.get_running_loop()
+    loop.set_debug(True)
+
+    curr_task = asyncio.current_task()
+
+    for task in asyncio.all_tasks():
+        task_name = task.get_name()
+
+        if task != curr_task:
+            if 'cancellable' in task_name:
+                if not task.done():
+
+                    task.cancel()
+                    logger.trace(f'send cancel to {task_name}')
 
 #

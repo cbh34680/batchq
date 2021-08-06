@@ -10,11 +10,7 @@ job="${1:-abc000-1}"
 #jq_key=".additional.retval${1}"
 jq_key=".additional"
 
-echo
-echo "# QUERY=[$jq_key] ($job)"
-echo
-
-cat << EOF | nc -v localhost 9999 | jq -r "$jq_key"
+cat << EOF | nc localhost 9999 | jq -r "$jq_key"
 {"worker-key":"show-job", "exec-params":{"args":["${job}"], "kwargs":{"key":"response", "order-by":"desc", "limit":999999}}}
 
 EOF
