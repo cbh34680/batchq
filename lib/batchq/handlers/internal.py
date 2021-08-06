@@ -42,7 +42,7 @@ async def handle_ping(taskid:int, peername, worker:typing.Dict, exec_params:typi
     peer_host['loadavg'] = tuple(peer_host['loadavg'])
 
     active_hosts = memory.get_val('batchq.producer', 'active-hosts')
-    active_hosts = { k: v for k, v in active_hosts.items() if curr_ts - v['ping-ts'] < 120 and v['hostid'] != peer_hostid }
+    active_hosts = { k: v for k, v in active_hosts.items() if curr_ts - v['ping-ts'] < 60 and v['hostid'] != peer_hostid }
     active_hosts[peeraddr] = peer_host
     logger.debug(f'active-hosts={active_hosts}')
 
