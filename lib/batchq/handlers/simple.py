@@ -9,10 +9,8 @@ import asyncio.streams
 import contextlib
 import abc
 
-from .. import *
+from .. import get_memory
 from ..utils import *
-from ..utils import jobutil
-from ..utils import queutil
 
 
 logger = logging.getLogger(__name__)
@@ -24,91 +22,6 @@ async def handle_any(taskid:int, peername, worker:typing.Dict, exec_params:typin
     logger.warning(f'handle_any:{taskid}) {peername} {exec_params}')
 
     return None
-
-'''
-@contextlib.asynccontextmanager
-async def FilePipeStream(path):
-
-    try:
-        rpipe, wpipe = os.pipe()
-        reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(reader)
-
-        loop = asyncio.get_running_loop()
-
-        rfd = os.fdopen(rpipe, mode='r')
-        transport, protocol = await loop.connect_read_pipe(lambda: protocol, rfd)
-
-        yield wpipe
-
-        transport.close()
-
-        if path is not None:
-            async with await path_open(path) as f:
-
-                while True:
-                    line = await reader.readline()
-                    if str_is_empty(line):
-                        break
-
-                    await f.write(line.decode('utf-8'))
-
-    finally:
-        os.close(wpipe)
-        #os.close(self.rpipe) --> OSError: errno=9 'Bad Descriptor'
-        rfd.close()
-'''
-'''
-class FilePipeStream():
-
-    def __init__(self, path):
-
-        rpipe, wpipe = os.pipe()
-        reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(reader)
-
-        self.path = path
-        self.rpipe = rpipe
-        self.wpipe = wpipe
-        self.reader = reader
-        self.protocol = protocol
-
-    async def __aenter__(self):
-
-        loop = asyncio.get_running_loop()
-
-        rfd = os.fdopen(self.rpipe, mode='r')
-        transport, protocol = await loop.connect_read_pipe(lambda: self.protocol, rfd)
-
-        self.rfd = rfd
-        self.transport = transport
-        self.protocol = protocol
-
-        return self.wpipe
-
-    async def close(self):
-
-        self.transport.close()
-
-        if self.path is not None:
-
-            async with await path_open(self.path) as f:
-
-                while True:
-                    line = await self.reader.readline()
-                    if str_is_empty(line):
-                        break
-
-                    await f.write(line.decode('utf-8'))
-
-        os.close(self.wpipe)
-        #os.close(self.rpipe) --> OSError: errno=9 'Bad Descriptor'
-        self.rfd.close()
-
-    async def __aexit__(self, *args, **kwargs):
-        await self.close()
-        return False
-'''
 
 class PipeAdapter(abc.ABC):
 
