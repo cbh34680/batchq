@@ -3,6 +3,7 @@ import functools
 import asyncinotify
 import logging
 import sys
+import distutils.util
 
 from . import *
 from .utils import *
@@ -47,6 +48,10 @@ async def _main():
             },
             'master-host': {
                 'modify': functools.partial(memory.helper.load_path_val, converter=peername_str2tuple),
+                'delete': memory.unset_val,
+            },
+            'pause': {
+                'modify': functools.partial(memory.helper.load_path_val, defval=False, converter=str2bool),
                 'delete': memory.unset_val,
             },
         },

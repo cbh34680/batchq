@@ -18,14 +18,16 @@ import traceback
 import deepmerge
 import copy
 import time
+import distutils
 
 
 __all__ = [
+    'str_is_empty',
+    'str2bool',
     'local_datetime',
     'utc_datetime',
     'current_timestamp',
     'here',
-    'str_is_empty',
     'sys_exit',
     'expand_placeholder',
     'path_expand_placeholder',
@@ -57,7 +59,17 @@ _MERGER = deepmerge.Merger([
 )
 
 
-def local_datetime(utc=False):
+def str_is_empty(arg) -> bool:
+
+    if arg is None:
+        return True
+
+    assert isinstance(arg, (str, bytes))
+    return len(arg) == 0
+
+str2bool = lambda x: False if str_is_empty(x) else bool(distutils.util.strtobool(x))
+
+def local_datetime():
     return datetime.datetime.now()
 
 def utc_datetime():
@@ -73,14 +85,6 @@ def here():
     info = inspect.getframeinfo(frame0)
 
     return os.path.basename(info.filename), info.lineno, info.function
-
-def str_is_empty(arg) -> bool:
-
-    if arg is None:
-        return True
-
-    assert isinstance(arg, (str, bytes))
-    return len(arg) == 0
 
 def sys_exit(arg, **kwargs) -> typing.NoReturn:
 
@@ -202,21 +206,7 @@ async def path_read(path, *, defval=None):
     else:
         return value.strip()
 
-'''
-async def path_write(path, value, *, mode='w'):
 
-    path_dir = os.path.dirname(path)
-    isdir = await async_os_path_isdir(path_dir)
-
-    if not isdir:
-        logger.trace(f'{path_dir}: make dir')
-        await async_os_makedirs(path_dir, mode=0o700, exist_ok=True)
-
-    async with aiofiles.open(path, mode=mode) as f:
-        wb = await f.write(value)
-
-        return wb, path
-'''
 async def path_open(path, *, mode='w'):
 
     path_dir = os.path.dirname(path)
@@ -236,7 +226,7 @@ async def path_write(path, value, *, mode='w'):
     #    return wb, path
 
     async with await path_open(path, mode=mode) as f:
-        wb = await f.write(value)
+        wb = await f.write(str(value))
         return wb, path
 
 

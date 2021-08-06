@@ -57,6 +57,12 @@ async def on_check_request(request, response):
 
     if worker['increment-running']:
 
+        if memory.get_val(__name__, 'pause'):
+            response['code'] = 503
+            response['reason'] = 'SERVER PAUSED'
+            response['retry-suggestion'] = 'POSSIBLE LATER'
+            return False
+
         softlimit = memory.get_val(__name__, 'softlimit')
         running = memory.get_val(__name__, 'running')
 
@@ -72,6 +78,10 @@ async def on_check_request(request, response):
 
 
 async def on_timer(num_times=0):
+
+    if memory.get_val(__name__, 'pause'):
+        logger.warning('paused, no send ping')
+        return
 
     peername = memory.get_val(__name__, 'master-host')
 
@@ -305,6 +315,12 @@ class _MyTaskFactory(TaskFactory):
 
         except ValueError:
             logger.warning('master-host: not defined')
+
+        try:
+            await memory.helper.load_path_val(__name__, 'pause', converter=str2bool)
+
+        except ValueError:
+            logger.debug('pause: not defined')
 
         logger.trace(f'append hook: softlimit: unset_val')
         hook = lambda: memory.set_val(__name__, 'softlimit', self.num_tasks)

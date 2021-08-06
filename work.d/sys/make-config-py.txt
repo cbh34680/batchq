@@ -86,6 +86,7 @@ def gen_config():
             'batchq.consumer': {
                 'softlimit': '${BQ_APP_WORK}/sys/var/etc/softlimit.val',
                 'master-host': '${BQ_APP_WORK}/sys/var/etc/master-host.val',
+                'pause': '${BQ_APP_WORK}/sys/var/etc/pause.val',
             },
             'batchq.postman': {
                 'sent': '${BQ_APP_WORK}/sys/var/log/sent/%y/%m%d/%H.log',
@@ -147,44 +148,6 @@ def gen_worker():
 
             # [option default='handle_any']
             'handler': 'handle_show_job',
-
-            # [option default=True]
-            'increment-running': False,
-
-            # [auto]
-            'exec-params': {
-                # [option default=True]
-                'send-report': False,
-            },
-        },
-        'pause': {
-            # [option default='later']
-            'when': 'immediate',
-
-            # [option default='batchq.handlers.simple']
-            'module': 'batchq.handlers.immediate',
-
-            # [option default='handle_any']
-            'handler': 'handle_pause',
-
-            # [option default=True]
-            'increment-running': False,
-
-            # [auto]
-            'exec-params': {
-                # [option default=True]
-                'send-report': False,
-            },
-        },
-        'resume': {
-            # [option default='later']
-            'when': 'immediate',
-
-            # [option default='batchq.handlers.simple']
-            'module': 'batchq.handlers.immediate',
-
-            # [option default='handle_any']
-            'handler': 'handle_pause',
 
             # [option default=True]
             'increment-running': False,
@@ -290,6 +253,44 @@ def gen_worker():
                 'send-report': False,
             },
         },
+        'pause': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_pause',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'resume': {
+            # [option default='later']
+            #'when': 'later',
+
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_resume',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
+                # [option default=True]
+                'send-report': False,
+            },
+        },
         'world-end': {
             # [option default='later']
             #'when': 'later',
@@ -305,10 +306,25 @@ def gen_worker():
 
             # [auto]
             'exec-params': {
-                'kwargs': {
-                    'propagate': True,
-                },
+                # [option default=True]
+                'send-report': False,
+            },
+        },
+        'local-end': {
+            # [option default='later']
+            #'when': 'later',
 
+            # [option default='batchq.handlers.simple']
+            'module': 'batchq.handlers.delay',
+
+            # [option default='handle_any']
+            'handler': 'handle_local_end',
+
+            # [option default=True]
+            'increment-running': False,
+
+            # [auto]
+            'exec-params': {
                 # [option default=True]
                 'send-report': False,
             },
@@ -341,7 +357,7 @@ def gen_worker():
                 'adapter': 'file',
 
                 # [need if 'file']
-                'target': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.out',
+                'path': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.out',
             },
 
             # [option]
@@ -350,7 +366,7 @@ def gen_worker():
                 'adapter': 'file',
 
                 # [need if 'file']
-                'target': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.err',
+                'path': '${BQ_APP_WORK}/app-example/app1/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.err',
             },
 
             # [auto]

@@ -1,12 +1,8 @@
 import typing
 import logging
-import json
-import collections
-import sys
 import os
 import asyncio
 import asyncio.streams
-import contextlib
 import abc
 
 from .. import get_memory
@@ -69,7 +65,7 @@ class FileAdapter(PipeAdapter):
 
     def __init__(self, config, *, path_params):
 
-        self.path = path_expand_placeholder(config['target'], path_params=path_params)
+        self.path = path_expand_placeholder(config['path'], path_params=path_params)
         super().__init__()
 
     async def flush(self):
