@@ -32,7 +32,7 @@ def gen_config():
                 'listen-port': 9999,
             },
             'batchq.producer': {
-                'next-timeouts': (1.0, 5.0, 10.0, 20.0, 30.0),
+                'next-timeouts': (0.5, 5.0, 10.0, 20.0, 30.0),
             },
         },
         'path': {
@@ -383,6 +383,17 @@ def gen_worker():
                 },
                 # [option default=True]
                 #'send-report': True,
+            },
+        },
+        'app2': {
+            'handler': 'handle_subproc',
+            'execbin': '/bin/bash',
+            'program': '${BQ_APP_WORK}/app-example/app2/run.sh',
+            'cwd': '${BQ_APP_WORK}/app-example/app2',
+
+            'stdout': {
+                'adapter': 'file',
+                'path': '${BQ_APP_WORK}/app-example/app2/log/%y/%m%d/%H/%M%S-{app;pid}-{task;taskid}.out',
             },
         },
     }

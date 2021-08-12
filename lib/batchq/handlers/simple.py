@@ -135,7 +135,7 @@ async def handle_subproc(taskid:int, peername, worker:typing.Dict, exec_params:t
         static_env = {
             'BQ_WORKER_KEY': worker_key,
             'BQ_CLIENT': peername[0],
-            'BQ_SESSION': exec_params.get('job'),
+            'BQ_JOB': exec_params.get('job'),
             'BQ_TASKNO': taskid,
         }
 
