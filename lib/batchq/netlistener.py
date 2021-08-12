@@ -82,12 +82,12 @@ async def on_client_connected(reader:asyncio.StreamReader, writer:asyncio.Stream
         peeraddr = peername[0]
 
         loadavg = memory.get_val(__package__, 'loadavg')
-
         threshold = memory.get_val(__name__, 'busy-threshold')
-        queue = memory.get_queue('batchq.consumer')
 
         memory.helper.stats_incr(__name__, 'event')
         memory.helper.stats_incr(__name__, peeraddr, 'call')
+
+        queue = memory.get_queue('batchq.consumer')
 
         async for i, line in strmutil.readlines(reader, peername=peername, timeout=5.0, where=here()):
 
@@ -114,8 +114,8 @@ async def on_client_connected(reader:asyncio.StreamReader, writer:asyncio.Stream
                     path_key = 'proceed'
 
                 else:
-                    logger.debug(f'put(to consumer) message={message} ')
-                    queutil.put_nowait(queue, message, where=here())
+                    logger.debug(f'put(to consumer) message={message}')
+                    await queutil.put(queue, message, where=here())
 
             response = textutil.response2text(response)
             await strmutil.writeline(writer, response, peername=peername, where=here())
@@ -131,7 +131,9 @@ async def on_client_connected(reader:asyncio.StreamReader, writer:asyncio.Stream
         logger.warning(f'peername={peername} exception={type(e)}: {e}')
 
     finally:
+        logger.debug(f'close writer')
         writer.close()
+        await writer.wait_closed()
 
 
 class _MyTaskFactory(TaskFactory):

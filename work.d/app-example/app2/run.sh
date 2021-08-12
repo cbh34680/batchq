@@ -30,6 +30,7 @@ then
 
   nextnum=$(( $num - 1 ))
 
+  #cat << EOF | nc localhost 9999
   cat << EOF | nc -v -U ../../sys/var/run/batchq.sock
 {"worker-key":"app2", "exec-params":{"args":[${nextnum}, $((${num} + ${sum}))], "job":"${BQ_JOB}"}}
 
